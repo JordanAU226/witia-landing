@@ -317,7 +317,7 @@ export default function Home() {
                 Built by experience.
               </h2>
               <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, maxWidth: '560px' }}>
-                Jordan Anthony Unokesan is a Multi Award-Winning Starred First Class with Distinction Cambridge Graduate. As the founder of both WITIA and the charity Empowered Voices, he brings entrepreneurial vision, academic rigour, and lived experience of the problem he is solving.
+                Jordan Anthony Unokesan is a Multi Award-Winning Starred First Class with Distinction Cambridge Graduate, ranked 1st of 71 in Land Economy at Gonville & Caius College. Founder of WITIA and the charity Empowered Voices, Emergent Ventures Fellow, Prometheus X Fellow, and ranked 7th of 150 in the Powerlist Future Leaders Magazine — with prior experience at McKinsey, Barings, and Doughty Street Chambers.
               </p>
               <div style={{ marginTop: '24px' }}>
                 <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" style={ctaLink}>
@@ -326,29 +326,9 @@ export default function Home() {
               </div>
             </div>
 
-            <hr className="divider" style={{ marginTop: '40px' }} />
-
             <div className="reveal" ref={(el) => addRevealRef(el, 8)}>
-              {[
-                { cat: 'EDUCATION', text: 'Starred First Class with Distinction, Land Economy, Gonville & Caius College, Cambridge — Ranked 1st of 71' },
-                { cat: 'RECOGNITION', text: 'Powerlist Future Leaders — Ranked 7th of 150' },
-                { cat: 'FELLOWSHIPS', text: 'Emergent Ventures Fellow (Mercatus Center) · Prometheus X Fellow (Digital Harbor Foundation)' },
-                { cat: 'EXPERIENCE', text: 'Doughty Street Chambers · McKinsey & Co · Barings · Bridges for Enterprise (Consulting Director)' },
-                { cat: 'COMMUNITY', text: 'Jack Petchey Award · Merton Youth Parliament · British Youth Council' },
-                { cat: 'LEGAL', text: 'Pro bono counsel: Slaughter & May' },
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    paddingTop: '16px',
-                    paddingBottom: '16px',
-                    borderTop: '1px solid #E0E0E0',
-                    display: 'grid',
-                    gridTemplateColumns: '140px 1fr',
-                    gap: '16px',
-                    alignItems: 'start',
-                  }}
-                >
+              {[{ cat: '', text: '' }].filter(() => false).map((item, i) => (
+                <div key={i}>
                   <span style={{
                     fontSize: '9px',
                     letterSpacing: '0.12em',
