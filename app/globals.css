@@ -1,22 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&family=Raleway:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@700;800&family=Inter:wght@300;400;500;600&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { background: #F7F6F3; color: #1a1a1a; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+body { background: #fff; color: #000; font-family: 'Inter', -apple-system, sans-serif; }
 
-.serif { font-family: 'Playfair Display', serif; }
-.accent { color: #0a2342; }
-.accent-italic { font-style: italic; color: #0a2342; }
-.logo { font-family: 'Raleway', sans-serif; font-weight: 800; letter-spacing: 0.15em; color: #1a1a1a; }
+.serif { font-family: Georgia, 'Times New Roman', serif; }
+.logo-text { font-family: 'Raleway', sans-serif; font-weight: 800; letter-spacing: 0.15em; font-size: 13px; color: #000; text-transform: uppercase; }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+.section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; font-weight: 500; margin-bottom: 16px; }
+.divider { border: none; border-top: 1px solid #E0E0E0; margin: 0; }
 
-.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s ease; }
 .reveal.visible { opacity: 1; transform: translateY(0); }
+
+input, textarea, button { font-family: 'Inter', -apple-system, sans-serif; }
