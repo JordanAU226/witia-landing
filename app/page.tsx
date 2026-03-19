@@ -265,7 +265,7 @@ export default function Home() {
                 Built by experience.
               </h2>
               <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
-                Jordan Anthony Unokesan is a Multi Award-Winning Starred First Class with Distinction Cambridge Graduate, ranked 1st of 71 in Land Economy at Gonville & Caius College. Founder of WITIA, Emergent Ventures Fellow, Prometheus X Fellow, and a top 10 future leader as recognised by the Powerlist Magazine - with prior experience at McKinsey, Barings, and Doughty Street Chambers.
+                Jordan Anthony Unokesan is a Multi Award-Winning Cambridge Graduate who achieved the highest attainment in the history of Land Economy (Law, Economics & Policy) at Gonville & Caius College - ranked 1st of 71 with a Starred First Class with Distinction. Founder of WITIA, Emergent Ventures Fellow, Prometheus X Fellow, and a top 10 future leader as recognised by the Powerlist Magazine.
               </p>
               <div style={{ marginTop: '24px' }}>
                 <a href="https://www.linkedin.com/in/jordanu/" target="_blank" rel="noopener noreferrer" className="cta-link">
