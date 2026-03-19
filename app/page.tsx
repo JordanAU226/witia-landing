@@ -1,853 +1,564 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Linkedin, Mail, ChevronDown } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
 
-// ── Scroll reveal hook ──────────────────────────────────────────────────────
-function useReveal() {
+export default function Home() {
+  const [formState, setFormState] = useState<'idle' | 'success'>('idle');
+  const [formData, setFormData] = useState({ name: '', organisation: '', role: '', message: '' });
+  const revealRefs = useRef<(HTMLElement | null)[]>([]);
+
   useEffect(() => {
-    const els = document.querySelectorAll(".reveal");
-    const obs = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("visible");
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
           }
         });
       },
-      { threshold: 0.12 }
+      { threshold: 0.1 }
     );
-    els.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
+    revealRefs.current.forEach((el) => { if (el) observer.observe(el); });
+    return () => observer.disconnect();
   }, []);
-}
 
-// ── Navigation ──────────────────────────────────────────────────────────────
-function Nav() {
+  const addReveal = (el: HTMLElement | null) => {
+    if (el && !revealRefs.current.includes(el)) {
+      revealRefs.current.push(el);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormState('success');
+  };
+
   return (
-    <nav
-      style={{
-        position: "fixed",
+    <>
+      {/* NAV */}
+      <nav style={{
+        background: '#F7F6F3',
+        borderBottom: '1px solid #E5E3DE',
+        position: 'sticky',
         top: 0,
-        left: 0,
-        right: 0,
         zIndex: 100,
-        height: 64,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        background: "rgba(10,10,15,0.85)",
-        borderBottom: "1px solid #1e1e2e",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 5%",
-      }}
-    >
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div
-          style={{
-            width: 10,
-            height: 10,
-            background: "#00c2ff",
-            borderRadius: 2,
-            boxShadow: "0 0 10px rgba(0,194,255,0.6)",
-          }}
-        />
-        <span style={{ fontSize: 20, fontWeight: 700, color: "#f0f0f0", letterSpacing: "-0.02em" }}>
-          WITIA
-        </span>
-      </div>
-
-      {/* CTA */}
-      <a href="#contact" className="nav-btn">
-        Contact Us
-      </a>
-    </nav>
-  );
-}
-
-// ── Hero ────────────────────────────────────────────────────────────────────
-function Hero() {
-  return (
-    <section
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-        padding: "80px 5% 60px",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Animated dot grid background */}
-      <div
-        className="dot-grid gradient-mesh"
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 0,
-          opacity: 0.6,
-        }}
-      />
-
-      {/* Subtle glow orb */}
-      <div
-        style={{
-          position: "absolute",
-          top: "30%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: 600,
-          height: 600,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(0,194,255,0.06) 0%, transparent 70%)",
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      />
-
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 820, margin: "0 auto" }}>
-        {/* Pill badge */}
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            background: "rgba(0,194,255,0.08)",
-            border: "1px solid rgba(0,194,255,0.25)",
-            borderRadius: 100,
-            padding: "6px 16px",
-            marginBottom: 32,
-            fontSize: 11,
-            fontWeight: 600,
-            color: "#00c2ff",
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-          }}
-        >
-          <span style={{ fontSize: 8 }}>●</span>
-          LIVE PILOT · EUROPE&apos;S LARGEST LOCAL AUTHORITY
-        </div>
-
-        {/* Main headline */}
-        <h1
-          className="glow"
-          style={{
-            fontSize: "clamp(44px, 7vw, 78px)",
-            fontWeight: 900,
-            lineHeight: 1.05,
-            letterSpacing: "-0.03em",
-            marginBottom: 28,
-            color: "#f0f0f0",
-          }}
-        >
-          Corruption is an
-          <br />
-          <span style={{ color: "#00c2ff" }}>equilibrium.</span>
-          <br />
-          We&apos;re breaking it.
-        </h1>
-
-        {/* Subheadline */}
-        <p
-          style={{
-            fontSize: 18,
-            color: "#8888a0",
-            maxWidth: 560,
-            margin: "0 auto 40px",
-            lineHeight: 1.65,
-            fontWeight: 400,
-          }}
-        >
-          WITIA is an AI-powered trust layer for government procurement — combining fraud detection,
-          vendor trust scoring, and a cross-jurisdiction intelligence exchange.
-        </p>
-
-        {/* CTA */}
-        <div style={{ marginBottom: 56 }}>
-          <a href="#contact" className="cta-btn">
-            Request a Demo
+        height: '64px',
+        display: 'flex',
+        alignItems: 'center',
+      }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '6px', height: '6px', background: '#0a2342', flexShrink: 0 }} />
+            <span className="logo" style={{ fontSize: '18px' }}>WITIA</span>
+          </div>
+          <a
+            href="#contact"
+            style={{
+              border: '1px solid #0a2342',
+              color: '#0a2342',
+              fontSize: '13px',
+              padding: '8px 20px',
+              borderRadius: '4px',
+              textDecoration: 'none',
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 500,
+              transition: 'background 0.2s, color 0.2s',
+            }}
+            onMouseEnter={e => {
+              (e.target as HTMLAnchorElement).style.background = '#0a2342';
+              (e.target as HTMLAnchorElement).style.color = 'white';
+            }}
+            onMouseLeave={e => {
+              (e.target as HTMLAnchorElement).style.background = 'transparent';
+              (e.target as HTMLAnchorElement).style.color = '#0a2342';
+            }}
+          >
+            Get in touch
           </a>
         </div>
+      </nav>
 
-        {/* Stats row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 0,
-            flexWrap: "wrap",
-          }}
-        >
-          {[
-            { value: "£81B", label: "UK public procurement fraud (2023–24)" },
-            { value: "90–95%", label: "Industry false positive rate we solve" },
-            { value: "£59,984", label: "Pilot contract value secured" },
-          ].map((stat, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center" }}>
-              {i > 0 && (
-                <div
-                  style={{
-                    width: 1,
-                    height: 40,
-                    background: "#1e1e2e",
-                    margin: "0 32px",
-                  }}
-                />
-              )}
-              <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    fontSize: "clamp(22px, 3vw, 30px)",
-                    fontWeight: 800,
-                    color: "#f0f0f0",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {stat.value}
-                </div>
-                <div style={{ fontSize: 12, color: "#8888a0", marginTop: 4, maxWidth: 160 }}>
-                  {stat.label}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* HERO */}
+      <section style={{ padding: '120px 0 100px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px' }}>
+          {/* Pill */}
+          <div ref={addReveal} className="reveal" style={{
+            display: 'inline-block',
+            fontSize: '11px',
+            letterSpacing: '0.1em',
+            color: '#0a2342',
+            background: 'rgba(10,35,66,0.08)',
+            padding: '6px 14px',
+            borderRadius: '100px',
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 500,
+            marginBottom: '40px',
+          }}>
+            ● LIVE PILOT IN PROGRESS
+          </div>
 
-        {/* Scroll hint */}
-        <div
-          style={{
-            marginTop: 64,
-            display: "flex",
-            justifyContent: "center",
-            opacity: 0.4,
-          }}
-        >
-          <ChevronDown size={20} color="#8888a0" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── The Problem ─────────────────────────────────────────────────────────────
-function Problem() {
-  const problems = [
-    {
-      icon: "🔍",
-      title: "Broken Detection",
-      body: "Current fraud systems generate 90–95% false positives, drowning compliance teams in noise and letting real fraud through.",
-    },
-    {
-      icon: "⚖️",
-      title: "Misaligned Incentives",
-      body: "Honest contractors face economic death for refusing to bribe. The system rewards corruption and punishes integrity.",
-    },
-    {
-      icon: "🏛️",
-      title: "Fragmented Enforcement",
-      body: "A shell company debarred in Birmingham can bid in Maricopa County tomorrow. Enforcement operates in silos. Corruption does not.",
-    },
-  ];
-
-  return (
-    <section
-      style={{
-        padding: "100px 5%",
-        background: "#080810",
-      }}
-    >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div className="reveal" style={{ marginBottom: 56 }}>
-          <h2
+          {/* Headline */}
+          <h1
+            ref={addReveal}
+            className="reveal serif"
             style={{
-              fontSize: "clamp(28px, 4vw, 42px)",
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              marginBottom: 12,
+              fontSize: 'clamp(40px, 6vw, 68px)',
+              fontWeight: 700,
+              lineHeight: 1.1,
+              color: '#1a1a1a',
+              maxWidth: '800px',
+              margin: '0 auto',
             }}
           >
-            The broken status quo
-          </h2>
-          <p style={{ fontSize: 17, color: "#8888a0" }}>
-            Three systemic failures that make corruption rational.
-          </p>
-        </div>
+            Procurement fraud costs governments<br />
+            £81 billion. We make it<br />
+            <span style={{ fontStyle: 'italic', color: '#0a2342' }}>economically irrational.</span>
+          </h1>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 20,
-          }}
-        >
-          {problems.map((p, i) => (
-            <div
-              key={i}
-              className="reveal"
+          {/* Subheadline */}
+          <p
+            ref={addReveal}
+            className="reveal"
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '18px',
+              color: '#555',
+              fontWeight: 400,
+              maxWidth: '580px',
+              margin: '24px auto 0',
+              lineHeight: 1.6,
+            }}
+          >
+            An AI-powered trust layer combining fraud detection, vendor trust scoring, and a cross-jurisdiction intelligence exchange.
+          </p>
+
+          {/* CTA */}
+          <div ref={addReveal} className="reveal" style={{ marginTop: '40px' }}>
+            <a
+              href="#contact"
               style={{
-                background: "#111118",
-                border: "1px solid #1e1e2e",
-                borderRadius: 12,
-                padding: 24,
-                transition: "border-color 0.2s ease, transform 0.2s ease",
+                display: 'inline-block',
+                background: '#0a2342',
+                color: 'white',
+                fontSize: '15px',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 500,
+                padding: '14px 36px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                border: 'none',
+                transition: 'opacity 0.2s',
               }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(0,194,255,0.3)";
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "#1e1e2e";
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-              }}
+              onMouseEnter={e => ((e.target as HTMLAnchorElement).style.opacity = '0.9')}
+              onMouseLeave={e => ((e.target as HTMLAnchorElement).style.opacity = '1')}
             >
-              <div style={{ fontSize: 28, marginBottom: 16 }}>{p.icon}</div>
-              <h3
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "#f0f0f0",
-                  marginBottom: 12,
-                }}
-              >
-                {p.title}
-              </h3>
-              <p style={{ fontSize: 15, color: "#8888a0", lineHeight: 1.65 }}>{p.body}</p>
-            </div>
-          ))}
+              Request a Pilot
+            </a>
+          </div>
         </div>
-      </div>
-    </section>
-  );
-}
 
-// ── The Solution ────────────────────────────────────────────────────────────
-function Solution() {
-  const layers = [
-    {
-      num: "01",
-      icon: "🎯",
-      title: "Detection that cuts through the noise",
-      body: "Ensemble AI combining Isolation Forest, LOF, DBSCAN, One-Class SVM, and Autoencoder models — cutting false positives from 90-95% to actionable, explainable alerts. Because you can't change the game if you can't see the board.",
-      tags: ["Isolation Forest", "Graph ML", "Explainable AI", "Entity Resolution"],
-      label: "Fraud Detection",
-    },
-    {
-      num: "02",
-      icon: "📊",
-      title: "Incentives that make honesty rational",
-      body: "Vendors scored continuously across six dimensions using TOPSIS ranking with Bayesian confidence intervals. Top-quartile vendors gain expedited payments. Falling scores trigger increased audit probability. Fraud becomes irrational before it starts.",
-      tags: ["TOPSIS Ranking", "Bayesian Scoring", "6 Dimensions", "Real-time"],
-      label: "Trust Scoring",
-    },
-    {
-      num: "03",
-      icon: "🌐",
-      title: "Collective learning across jurisdictions",
-      body: "Fraud caught in Birmingham trains the model that protects Maricopa County. Each new client joins an immune system. This is the credit bureau insight applied to corruption — reputation made portable, learning made collective.",
-      tags: ["Cross-jurisdiction", "Network Effects", "Privacy-preserving", "Federated"],
-      label: "Intelligence Exchange",
-    },
-  ];
+        {/* Divider */}
+        <div style={{ maxWidth: '1100px', margin: '100px auto 0', padding: '0 48px' }}>
+          <div style={{ borderTop: '1px solid #E5E3DE' }} />
+        </div>
+      </section>
 
-  return (
-    <section style={{ padding: "100px 5%" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div className="reveal" style={{ textAlign: "center", marginBottom: 64 }}>
-          <h2
+      {/* THE PROBLEM */}
+      <section style={{ padding: '100px 0', background: '#F7F6F3' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px' }}>
+          <div ref={addReveal} className="reveal">
+            <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#888', fontFamily: 'Inter, sans-serif', fontWeight: 500, textTransform: 'uppercase' }}>
+              The Problem
+            </p>
+            <h2 className="serif" style={{ fontSize: '40px', fontWeight: 600, marginTop: '12px', color: '#1a1a1a' }}>
+              Three systemic failures keeping corruption alive.
+            </h2>
+          </div>
+
+          <div
+            ref={addReveal}
+            className="reveal"
             style={{
-              fontSize: "clamp(28px, 4vw, 42px)",
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              marginBottom: 14,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '24px',
+              marginTop: '56px',
             }}
           >
-            Three layers. One immune system.
-          </h2>
-          <p style={{ fontSize: 17, color: "#8888a0", maxWidth: 540, margin: "0 auto" }}>
-            Each layer works standalone. Together, they make corruption economically irrational.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-          {layers.map((layer, i) => (
-            <div key={i} className="reveal layer-card" style={{ padding: "36px 40px" }}>
+            {[
+              {
+                title: 'Broken Detection',
+                body: 'Current fraud systems generate 90–95% false positives, overwhelming compliance teams while real fraud slips through.',
+              },
+              {
+                title: 'Misaligned Incentives',
+                body: 'Honest contractors face economic ruin for refusing to bribe. The system rewards corruption and punishes integrity.',
+              },
+              {
+                title: 'Fragmented Enforcement',
+                body: 'A shell company debarred in Birmingham can bid in Maricopa County tomorrow. Corruption doesn\'t respect jurisdiction.',
+              },
+            ].map((card) => (
               <div
+                key={card.title}
                 style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 24,
-                  flexWrap: "wrap",
+                  background: 'white',
+                  border: '1px solid #E5E3DE',
+                  borderRadius: '8px',
+                  padding: '32px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                  borderLeft: '3px solid #0a2342',
                 }}
               >
-                {/* Number badge */}
-                <div style={{ flexShrink: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "#00c2ff",
-                      letterSpacing: "0.1em",
-                      marginBottom: 4,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    Layer {layer.num}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 42,
-                      fontWeight: 900,
-                      color: "rgba(0,194,255,0.12)",
-                      lineHeight: 1,
-                      letterSpacing: "-0.04em",
-                    }}
-                  >
-                    {layer.num}
-                  </div>
+                <h3 style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, fontSize: '17px', color: '#1a1a1a' }}>
+                  {card.title}
+                </h3>
+                <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 400, fontSize: '15px', color: '#555', lineHeight: 1.65, marginTop: '12px' }}>
+                  {card.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* THE SOLUTION */}
+      <section style={{ padding: '100px 0', background: 'white' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px' }}>
+          <div ref={addReveal} className="reveal">
+            <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#888', fontFamily: 'Inter, sans-serif', fontWeight: 500, textTransform: 'uppercase' }}>
+              The Solution
+            </p>
+            <h2 className="serif" style={{ fontSize: '40px', fontWeight: 600, marginTop: '12px', color: '#1a1a1a' }}>
+              Three layers. One immune system.
+            </h2>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '18px', color: '#555', maxWidth: '520px', marginTop: '16px', lineHeight: 1.6 }}>
+              Each layer delivers value standalone. Together, they make procurement corruption economically irrational.
+            </p>
+          </div>
+
+          <div style={{ marginTop: '64px' }}>
+            {[
+              {
+                num: '01',
+                title: 'Detection that cuts through the noise',
+                subtitle: 'Fraud Detection',
+                body: 'Ensemble AI combining five models — Isolation Forest, LOF, DBSCAN, One-Class SVM, and Autoencoder — reducing false positives from 90–95% to actionable, explainable alerts with full audit trails.',
+                tags: ['Isolation Forest', 'Graph ML', 'Explainable AI', 'Entity Resolution'],
+              },
+              {
+                num: '02',
+                title: 'Incentives that make honesty rational',
+                subtitle: 'Trust Scoring',
+                body: 'Vendors scored continuously across six dimensions using TOPSIS ranking with Bayesian confidence intervals. Top-quartile vendors earn expedited payments. Falling scores trigger audit probability increases. Fraud becomes irrational before it starts.',
+                tags: ['TOPSIS', 'Bayesian Scoring', '6 Dimensions', 'Continuous Monitoring'],
+              },
+              {
+                num: '03',
+                title: 'Collective learning across jurisdictions',
+                subtitle: 'Intelligence Exchange',
+                body: 'Fraud patterns caught in Birmingham train the model protecting Maricopa County. The credit bureau insight applied to procurement: reputation made portable, enforcement made collective.',
+                tags: ['Cross-jurisdiction', 'Network Effects', 'Privacy-preserving'],
+              },
+            ].map((layer, i) => (
+              <div
+                key={layer.num}
+                ref={addReveal}
+                className="reveal"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '80px 1fr',
+                  gap: '40px',
+                  padding: '40px 0',
+                  borderTop: '1px solid #E5E3DE',
+                  alignItems: 'start',
+                }}
+              >
+                <div className="serif" style={{ fontSize: '48px', fontStyle: 'italic', color: '#E5E3DE', lineHeight: 1, userSelect: 'none' }}>
+                  {layer.num}
                 </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, minWidth: 260 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      marginBottom: 16,
-                    }}
-                  >
-                    <span style={{ fontSize: 24 }}>{layer.icon}</span>
-                    <div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: "#00c2ff",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.1em",
-                          marginBottom: 4,
-                        }}
-                      >
-                        {layer.label}
-                      </div>
-                      <h3
-                        style={{
-                          fontSize: "clamp(17px, 2.2vw, 21px)",
-                          fontWeight: 700,
-                          color: "#f0f0f0",
-                          letterSpacing: "-0.01em",
-                        }}
-                      >
-                        {layer.title}
-                      </h3>
-                    </div>
-                  </div>
-
-                  <p
-                    style={{
-                      fontSize: 15,
-                      color: "#8888a0",
-                      lineHeight: 1.7,
-                      marginBottom: 20,
-                      maxWidth: 680,
-                    }}
-                  >
+                <div>
+                  <p style={{ fontSize: '11px', letterSpacing: '0.1em', color: '#0a2342', fontFamily: 'Inter, sans-serif', fontWeight: 500, textTransform: 'uppercase', marginBottom: '8px' }}>
+                    {layer.subtitle}
+                  </p>
+                  <h3 className="serif" style={{ fontSize: '24px', fontWeight: 600, color: '#1a1a1a' }}>
+                    {layer.title}
+                  </h3>
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '15px', color: '#555', lineHeight: 1.7, marginTop: '12px' }}>
                     {layer.body}
                   </p>
-
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {layer.tags.map((tag, j) => (
-                      <span key={j} className="tag-pill">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '20px' }}>
+                    {layer.tags.map(tag => (
+                      <span key={tag} style={{
+                        background: '#F0EFE9',
+                        color: '#555',
+                        fontSize: '12px',
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 500,
+                        padding: '4px 12px',
+                        borderRadius: '100px',
+                      }}>
                         {tag}
                       </span>
                     ))}
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Traction Bar ────────────────────────────────────────────────────────────
-function Traction() {
-  return (
-    <section
-      style={{
-        padding: "48px 5%",
-        background: "#080810",
-        borderTop: "1px solid #1e1e2e",
-        borderBottom: "1px solid #1e1e2e",
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          color: "#8888a0",
-          letterSpacing: "0.15em",
-          textTransform: "uppercase",
-          marginBottom: 20,
-        }}
-      >
-        Trusted By
-      </div>
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: "#8888a0",
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          lineHeight: 2,
-        }}
-      >
-        UK Cabinet Office
-        <span style={{ margin: "0 12px", color: "#1e1e2e" }}>·</span>
-        Birmingham City Council
-        <span style={{ margin: "0 12px", color: "#1e1e2e" }}>·</span>
-        Emergent Ventures
-        <span style={{ margin: "0 12px", color: "#1e1e2e" }}>·</span>
-        Prometheus X Fellowship
-      </div>
-    </section>
-  );
-}
-
-// ── About Jordan ────────────────────────────────────────────────────────────
-function About() {
-  const achievements = [
-    { label: "University", value: "Cambridge University" },
-    { label: "Rank", value: "#1 of 71 students" },
-    { label: "Academic record", value: "Highest marks in subject history" },
-    { label: "Fellowship", value: "Emergent Ventures Fellow" },
-    { label: "Fellowship", value: "Prometheus X Fellow" },
-    { label: "Legal support", value: "Slaughter & May (Pro bono)" },
-    { label: "Company", value: "WITIA LTD — Companies House" },
-  ];
-
-  return (
-    <section style={{ padding: "100px 5%" }}>
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: 56,
-          alignItems: "start",
-        }}
-      >
-        {/* Left — Story */}
-        <div className="reveal">
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#00c2ff",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              marginBottom: 16,
-            }}
-          >
-            The Founder
-          </div>
-
-          <h2
-            style={{
-              fontSize: "clamp(24px, 3vw, 32px)",
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              marginBottom: 28,
-              color: "#f0f0f0",
-            }}
-          >
-            Jordan Anthony Unokesan
-          </h2>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-            {[
-              "When I was fourteen, I watched my father's construction company build hospitals in Nigeria's Niger Delta. The work was completed. Certified. Approved. The payments never came.",
-              "Fifteen years of watching a man navigate a system designed to exhaust honest people. Those who paid bribes got paid. Those who didn't, didn't.",
-              "At Cambridge, I studied Land Economy — law, economics, policy — ranked first among 71 students, achieving the highest marks in the subject's history. My dissertation uncovered $2 billion in anomalous procurement spend that changed Nigerian government policy.",
-              "I built WITIA because I know exactly who it's for: my father, and every contractor like him.",
-            ].map((para, i) => (
-              <p
-                key={i}
-                style={{
-                  fontSize: 16,
-                  color: i === 3 ? "#f0f0f0" : "#8888a0",
-                  lineHeight: 1.75,
-                  fontStyle: i === 3 ? "italic" : "normal",
-                  fontWeight: i === 3 ? 500 : 400,
-                }}
-              >
-                {para}
-              </p>
-            ))}
-          </div>
-
-          {/* Links */}
-          <div style={{ display: "flex", gap: 20, marginTop: 32, flexWrap: "wrap" }}>
-            <a
-              href="https://www.linkedin.com/in/jordanunokesan"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                color: "#00c2ff",
-                textDecoration: "none",
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-            >
-              <Linkedin size={16} />
-              Connect
-            </a>
-            <a
-              href="mailto:jordan@witia.ai"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                color: "#00c2ff",
-                textDecoration: "none",
-                fontSize: 14,
-                fontWeight: 500,
-              }}
-            >
-              <Mail size={16} />
-              jordan@witia.ai
-            </a>
-          </div>
-        </div>
-
-        {/* Right — Credentials card */}
-        <div
-          className="reveal"
-          style={{
-            background: "#111118",
-            border: "1px solid #1e1e2e",
-            borderRadius: 12,
-            padding: 32,
-            animation: "pulse-glow 4s ease-in-out infinite",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#00c2ff",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              marginBottom: 24,
-            }}
-          >
-            Credentials
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {achievements.map((a, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  paddingBottom: 16,
-                  borderBottom: i < achievements.length - 1 ? "1px solid #1e1e2e" : "none",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={{ fontSize: 12, color: "#8888a0", letterSpacing: "0.05em" }}>
-                  {a.label.toUpperCase()}
-                </span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#f0f0f0", textAlign: "right" }}>
-                  {a.value}
-                </span>
-              </div>
             ))}
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// ── Contact ─────────────────────────────────────────────────────────────────
-function Contact() {
-  const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: "", org: "", role: "", message: "" });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
-  };
-
-  return (
-    <section
-      id="contact"
-      style={{
-        padding: "100px 5%",
-        background: "#080810",
-        borderTop: "1px solid #1e1e2e",
-      }}
-    >
-      <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <div className="reveal" style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2
-            style={{
-              fontSize: "clamp(28px, 4vw, 40px)",
-              fontWeight: 800,
-              letterSpacing: "-0.02em",
-              marginBottom: 14,
-            }}
-          >
-            Work with us
-          </h2>
-          <p style={{ fontSize: 17, color: "#8888a0" }}>
-            Piloting with local authorities across the UK and US. Get in touch.
+      {/* TRACTION */}
+      <section style={{ padding: '60px 0', background: '#F7F6F3', borderTop: '1px solid #E5E3DE', borderBottom: '1px solid #E5E3DE' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px', textAlign: 'center' }}>
+          <p style={{
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '13px',
+            letterSpacing: '0.08em',
+            color: '#888',
+            textTransform: 'uppercase',
+          }}>
+            UK Cabinet Office &nbsp;·&nbsp; Birmingham City Council &nbsp;·&nbsp; Emergent Ventures &nbsp;·&nbsp; Prometheus X Fellowship
           </p>
         </div>
+      </section>
 
-        {submitted ? (
+      {/* ABOUT */}
+      <section style={{ padding: '100px 0', background: 'white' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px' }}>
           <div
-            className="reveal visible"
+            ref={addReveal}
+            className="reveal"
             style={{
-              background: "#111118",
-              border: "1px solid rgba(0,194,255,0.3)",
-              borderRadius: 12,
-              padding: 48,
-              textAlign: "center",
+              display: 'grid',
+              gridTemplateColumns: '55% 1fr',
+              gap: '80px',
+              alignItems: 'start',
             }}
           >
-            <div style={{ fontSize: 36, marginBottom: 16 }}>✅</div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Message sent</h3>
-            <p style={{ color: "#8888a0", fontSize: 15 }}>
-              Thank you for reaching out. Jordan will be in touch shortly.
+            {/* Left */}
+            <div>
+              <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#888', fontFamily: 'Inter, sans-serif', fontWeight: 500, textTransform: 'uppercase', marginBottom: '20px' }}>
+                The Founder
+              </p>
+              <h2 className="serif" style={{ fontSize: '36px', fontWeight: 600, color: '#1a1a1a' }}>
+                Jordan Anthony Unokesan
+              </h2>
+              <p style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '16px',
+                color: '#444',
+                lineHeight: 1.75,
+                marginTop: '20px',
+              }}>
+                Jordan is a Multi Award-Winning Starred First Class with Distinction Cambridge Graduate with a track record of historic academic achievements and excellent leadership experience. As the founder of both an AI-powered anti-corruption platform (witia.ai) and the charity Empowered Voices, he demonstrates entrepreneurial vision and leadership.
+              </p>
+              <p style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '16px',
+                color: '#444',
+                lineHeight: 1.75,
+                marginTop: '16px',
+              }}>
+                With experience in legal research, consulting, and financial advisory roles at Doughty Street Chambers, McKinsey &amp; Co and Barings, alongside a Consulting Directorship at Bridges for Enterprise, he was ranked 7th out of 150 in the Powerlist Future Leaders Magazine.
+              </p>
+              <p style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '16px',
+                color: '#444',
+                lineHeight: 1.75,
+                marginTop: '16px',
+              }}>
+                A recent winner of the Emergent Ventures Award from the Mercatus Center and a Prometheus X Fellow, Jordan holds the Jack Petchey Award for services to his local community and is a former member of Merton Youth Parliament and the British Youth Council.
+              </p>
+              <a
+                href="mailto:jordan@witia.ai"
+                style={{
+                  display: 'inline-block',
+                  marginTop: '24px',
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '14px',
+                  color: '#0a2342',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid transparent',
+                  transition: 'border-color 0.2s',
+                }}
+                onMouseEnter={e => ((e.target as HTMLAnchorElement).style.borderBottomColor = '#0a2342')}
+                onMouseLeave={e => ((e.target as HTMLAnchorElement).style.borderBottomColor = 'transparent')}
+              >
+                jordan@witia.ai
+              </a>
+            </div>
+
+            {/* Right — credentials */}
+            <div style={{
+              background: '#F7F6F3',
+              border: '1px solid #E5E3DE',
+              borderRadius: '8px',
+              padding: '32px',
+            }}>
+              {[
+                'Starred First, Cambridge (Land Economy)',
+                '#1 of 71 — Highest marks in subject history',
+                'Emergent Ventures Fellow (Mercatus Center)',
+                'Prometheus X Fellow (Digital Harbor Foundation)',
+                'Powerlist Future Leaders — Ranked 7th of 150',
+                'Jack Petchey Award',
+                'Pro bono legal: Slaughter & May',
+                'WITIA LTD — Companies House registered',
+              ].map((cred) => (
+                <div key={cred} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#0a2342', flexShrink: 0, marginTop: '6px' }} />
+                  <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#444', lineHeight: 1.5 }}>{cred}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CONTACT */}
+      <section id="contact" style={{ padding: '100px 0', background: '#F7F6F3' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 48px' }}>
+          <div
+            ref={addReveal}
+            className="reveal"
+            style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}
+          >
+            <p style={{ fontSize: '11px', letterSpacing: '0.12em', color: '#888', fontFamily: 'Inter, sans-serif', fontWeight: 500, textTransform: 'uppercase' }}>
+              Contact
+            </p>
+            <h2 className="serif" style={{ fontSize: '40px', fontWeight: 600, marginTop: '12px', color: '#1a1a1a' }}>
+              Work with us.
+            </h2>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '16px', color: '#555', marginTop: '16px', lineHeight: 1.6 }}>
+              Piloting with local authorities across the UK and US. We&apos;re selectively onboarding new jurisdictions.
+            </p>
+
+            {formState === 'success' ? (
+              <p className="serif" style={{ fontStyle: 'italic', fontSize: '20px', color: '#1a1a1a', marginTop: '48px' }}>
+                Message received. We&apos;ll be in touch.
+              </p>
+            ) : (
+              <form onSubmit={handleSubmit} style={{ marginTop: '48px', textAlign: 'left' }}>
+                {(['name', 'organisation', 'role'] as const).map((field) => (
+                  <input
+                    key={field}
+                    type="text"
+                    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                    value={formData[field]}
+                    onChange={e => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
+                    required
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      background: 'white',
+                      border: '1px solid #E5E3DE',
+                      borderRadius: '6px',
+                      padding: '12px 16px',
+                      fontSize: '15px',
+                      fontFamily: 'Inter, sans-serif',
+                      marginBottom: '16px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onFocus={e => (e.target.style.borderColor = '#0a2342')}
+                    onBlur={e => (e.target.style.borderColor = '#E5E3DE')}
+                  />
+                ))}
+                <textarea
+                  rows={4}
+                  placeholder="Message"
+                  value={formData.message}
+                  onChange={e => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                  required
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    background: 'white',
+                    border: '1px solid #E5E3DE',
+                    borderRadius: '6px',
+                    padding: '12px 16px',
+                    fontSize: '15px',
+                    fontFamily: 'Inter, sans-serif',
+                    marginBottom: '16px',
+                    outline: 'none',
+                    resize: 'vertical',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={e => (e.target.style.borderColor = '#0a2342')}
+                  onBlur={e => (e.target.style.borderColor = '#E5E3DE')}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    background: '#0a2342',
+                    color: 'white',
+                    fontSize: '15px',
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 500,
+                    padding: '14px 36px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseEnter={e => ((e.target as HTMLButtonElement).style.opacity = '0.9')}
+                  onMouseLeave={e => ((e.target as HTMLButtonElement).style.opacity = '1')}
+                >
+                  Send Message
+                </button>
+              </form>
+            )}
+
+            <p style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#888', marginTop: '32px' }}>
+              or email directly{' '}
+              <a
+                href="mailto:jordan@witia.ai"
+                style={{ color: '#0a2342', textDecoration: 'none' }}
+                onMouseEnter={e => ((e.target as HTMLAnchorElement).style.textDecoration = 'underline')}
+                onMouseLeave={e => ((e.target as HTMLAnchorElement).style.textDecoration = 'none')}
+              >
+                jordan@witia.ai
+              </a>
             </p>
           </div>
-        ) : (
-          <form
-            className="reveal"
-            onSubmit={handleSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: 16 }}
-          >
-            <input
-              className="form-input"
-              type="text"
-              placeholder="Full name"
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-            <input
-              className="form-input"
-              type="text"
-              placeholder="Organisation"
-              required
-              value={form.org}
-              onChange={(e) => setForm({ ...form, org: e.target.value })}
-            />
-            <input
-              className="form-input"
-              type="text"
-              placeholder="Role / Title"
-              required
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-            />
-            <textarea
-              className="form-input"
-              placeholder="How can WITIA help you?"
-              rows={4}
-              required
-              value={form.message}
-              onChange={(e) => setForm({ ...form, message: e.target.value })}
-              style={{ resize: "vertical" }}
-            />
-            <button type="submit" className="submit-btn">
-              Send Message
-            </button>
-          </form>
-        )}
+        </div>
+      </section>
 
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: 28,
-            fontSize: 14,
-            color: "#8888a0",
-          }}
-        >
-          Or email directly:{" "}
-          <a
-            href="mailto:jordan@witia.ai"
-            style={{ color: "#00c2ff", textDecoration: "none" }}
-          >
-            jordan@witia.ai
-          </a>
-        </p>
-      </div>
-    </section>
-  );
-}
+      {/* FOOTER */}
+      <footer style={{ padding: '32px 0', borderTop: '1px solid #E5E3DE', background: '#F7F6F3' }}>
+        <div style={{
+          maxWidth: '1100px',
+          margin: '0 auto',
+          padding: '0 48px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#888' }}>© 2026 WITIA LTD</span>
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#888' }}>witia.ai</span>
+        </div>
+      </footer>
 
-// ── Footer ──────────────────────────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer
-      style={{
-        padding: "24px 5%",
-        borderTop: "1px solid #1e1e2e",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: 12,
-      }}
-    >
-      <span style={{ fontSize: 13, color: "#8888a0" }}>
-        © 2026 WITIA LTD. All rights reserved.
-      </span>
-      <a
-        href="https://witia.ai"
-        style={{ fontSize: 13, color: "#8888a0", textDecoration: "none" }}
-      >
-        witia.ai
-      </a>
-    </footer>
-  );
-}
-
-// ── Page ────────────────────────────────────────────────────────────────────
-export default function Page() {
-  useReveal();
-
-  return (
-    <>
-      <Nav />
-      <main>
-        <Hero />
-        <Problem />
-        <Solution />
-        <Traction />
-        <About />
-        <Contact />
-      </main>
-      <Footer />
+      {/* Mobile responsive */}
+      <style>{`
+        @media (max-width: 768px) {
+          nav > div, section > div, footer > div {
+            padding-left: 24px !important;
+            padding-right: 24px !important;
+          }
+          .about-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .solution-row {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </>
   );
 }
