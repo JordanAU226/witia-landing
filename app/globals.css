@@ -14,3 +14,24 @@ body { background: #fff; color: #000; font-family: 'Inter', -apple-system, sans-
 .reveal.visible { opacity: 1; transform: translateY(0); }
 
 input, textarea, button { font-family: 'Inter', -apple-system, sans-serif; }
+
+.globe-section {
+  background: #040408;
+  display: flex;
+  align-items: center;
+  min-height: 600px;
+}
+.globe-text {
+  flex: 0 0 40%;
+  padding: 64px 48px;
+}
+.globe-canvas {
+  flex: 1;
+  height: 600px;
+  position: relative;
+}
+@media (max-width: 768px) {
+  .globe-section { flex-direction: column-reverse; min-height: auto; }
+  .globe-text { padding: 40px 20px; }
+  .globe-canvas { width: 100%; height: 350px; }
+}

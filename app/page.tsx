@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+
+const Globe = dynamic(() => import('../components/Globe'), { ssr: false });
 
 export default function Home() {
   const [submitted, setSubmitted] = useState(false);
@@ -250,6 +253,31 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* GLOBE - FRAUD INTELLIGENCE EXCHANGE */}
+        <section className="globe-section">
+          <div className="globe-text">
+            <p style={{ fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(0,194,255,0.7)', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '16px' }}>
+              Fraud Intelligence Exchange
+            </p>
+            <h2 className="serif" style={{ fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 400, lineHeight: 1.2, color: '#fff' }}>
+              The network that grows stronger with every jurisdiction.
+            </h2>
+            <p style={{ marginTop: '20px', fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, fontFamily: "'Inter', sans-serif", maxWidth: '360px' }}>
+              Each jurisdiction that joins WITIA makes every other jurisdiction harder to defraud. Fraud patterns caught in Birmingham train the model protecting Maricopa County. This is the credit bureau insight applied to procurement — reputation made portable, enforcement made collective.
+            </p>
+            <div style={{ marginTop: '28px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+              {['12+ cities', '3 continents', '1 immune system'].map((stat, i) => (
+                <span key={i} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter', sans-serif", letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  {stat}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="globe-canvas">
+            <Globe />
           </div>
         </section>
 
