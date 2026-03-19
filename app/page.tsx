@@ -11,18 +11,12 @@ export default function Home() {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
+          if (entry.isIntersecting) entry.target.classList.add('visible');
         });
       },
       { threshold: 0.1 }
     );
-
-    revealRefs.current.forEach((el) => {
-      if (el) observer.observe(el);
-    });
-
+    revealRefs.current.forEach((el) => { if (el) observer.observe(el); });
     return () => observer.disconnect();
   }, []);
 
@@ -45,7 +39,7 @@ export default function Home() {
   const ctaLink: React.CSSProperties = {
     fontSize: '10px',
     letterSpacing: '0.1em',
-    textTransform: 'uppercase',
+    textTransform: 'uppercase' as const,
     color: '#000',
     textDecoration: 'none',
     fontFamily: "'Inter', sans-serif",
@@ -70,11 +64,8 @@ export default function Home() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    borderBottom: '1px solid #E0E0E0',
     border: 'none',
-    borderBottomWidth: '1px',
-    borderBottomStyle: 'solid',
-    borderBottomColor: '#E0E0E0',
+    borderBottom: '1px solid #E0E0E0',
     padding: '12px 0',
     background: 'transparent',
     fontSize: '13px',
@@ -83,18 +74,32 @@ export default function Home() {
     outline: 'none',
   };
 
+  const rowStyle: React.CSSProperties = {
+    paddingTop: '20px',
+    paddingBottom: '20px',
+    borderTop: '1px solid #E0E0E0',
+    display: 'grid',
+    gridTemplateColumns: '120px 1fr',
+    gap: '24px',
+    alignItems: 'start',
+  };
+
+  const rowLabel: React.CSSProperties = {
+    fontSize: '9px',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase' as const,
+    color: '#888',
+    fontWeight: 500,
+    paddingTop: '2px',
+  };
+
   return (
     <>
       {/* NAV */}
       <nav style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        background: '#fff',
-        borderBottom: '1px solid #E0E0E0',
-        height: '52px',
-        display: 'flex',
-        alignItems: 'center',
+        position: 'sticky', top: 0, zIndex: 100,
+        background: '#fff', borderBottom: '1px solid #E0E0E0',
+        height: '52px', display: 'flex', alignItems: 'center',
       }}>
         <div style={{ ...container, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span className="logo-text">WITIA</span>
@@ -106,32 +111,16 @@ export default function Home() {
         {/* HERO */}
         <section style={{ paddingTop: '80px', paddingBottom: '60px' }}>
           <div style={container}>
-            <div
-              className="reveal"
-              ref={(el) => addRevealRef(el, 0)}
-            >
+            <div className="reveal" ref={(el) => addRevealRef(el, 0)}>
               <p className="section-label">01 — THE MISSION</p>
-              <h1
-                className="serif"
-                style={{
-                  fontSize: 'clamp(32px, 6vw, 42px)',
-                  fontWeight: 400,
-                  lineHeight: 1.15,
-                  color: '#000',
-                  letterSpacing: '-0.01em',
-                }}
-              >
+              <h1 className="serif" style={{ fontSize: 'clamp(32px, 6vw, 42px)', fontWeight: 400, lineHeight: 1.15, color: '#000', letterSpacing: '-0.01em' }}>
                 Making procurement corruption<br />economically irrational.
               </h1>
-              <p style={{
-                marginTop: '20px',
-                fontSize: '14px',
-                color: '#555',
-                lineHeight: 1.7,
-                maxWidth: '520px',
-                fontFamily: "'Inter', sans-serif",
-              }}>
+              <p style={{ marginTop: '20px', fontSize: '14px', color: '#555', lineHeight: 1.7, maxWidth: '520px', fontFamily: "'Inter', sans-serif" }}>
                 WITIA is an AI-powered trust layer for government procurement — combining fraud detection, vendor trust scoring, and a cross-jurisdiction intelligence exchange.
+              </p>
+              <p style={{ marginTop: '12px', fontSize: '13px', color: '#888', lineHeight: 1.6, maxWidth: '480px', fontFamily: "'Inter', sans-serif" }}>
+                Built by teams from Cambridge and McKinsey. Backed by Emergent Ventures and Prometheus Fellowship.
               </p>
               <div style={{ marginTop: '28px' }}>
                 <a href="#contact" style={{ ...ctaLink, fontSize: '11px' }}>REQUEST A PILOT →</a>
@@ -148,66 +137,51 @@ export default function Home() {
             <div className="reveal" ref={(el) => addRevealRef(el, 1)}>
               <p className="section-label">02 — WHY WITIA</p>
               <h2 className="serif" style={{ fontSize: '34px', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
-                Economists who understand corruption.
+                Corruption is an equilibrium.
               </h2>
-              <p style={{
-                marginTop: '20px',
-                fontSize: '13px',
-                color: '#555',
-                lineHeight: 1.7,
-                maxWidth: '540px',
-              }}>
-                Corruption is not a moral failing — it is an equilibrium. Sustained by broken detection, misaligned incentives, and fragmented enforcement. Changing it requires mechanism design, not moralising.
+              <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, maxWidth: '540px' }}>
+                It is not a moral failing — it is sustained by broken detection, misaligned incentives, and fragmented enforcement. Changing it requires mechanism design, not moralising.
               </p>
-              <div style={{ marginTop: '24px' }}>
-                <a href="#contact" style={ctaLink}>READ OUR APPROACH →</a>
-              </div>
             </div>
 
             <hr className="divider" style={{ marginTop: '40px' }} />
 
             <div className="reveal" ref={(el) => addRevealRef(el, 2)}>
               {[
-                {
-                  label: 'THE PROBLEM',
-                  text: '£81 billion in UK public procurement fraud detected in 2023-24 alone. Current systems generate 90–95% false positives.',
-                },
-                {
-                  label: 'THE INSIGHT',
-                  text: 'Corruption is an equilibrium. The honest contractor faces economic ruin for refusing to bribe. Change the incentives, change the outcome.',
-                },
-                {
-                  label: 'THE SOLUTION',
-                  text: 'Three-layer infrastructure: fraud detection, continuous trust scoring, and a cross-jurisdiction fraud intelligence exchange.',
-                },
+                { label: 'THE PROBLEM', text: '£81 billion in UK public procurement fraud detected in 2023–24 alone. Current systems generate 90–95% false positives, drowning teams in noise while real fraud passes through.' },
+                { label: 'THE INSIGHT', text: 'The honest contractor faces economic ruin for refusing to bribe when competitors do not. Change the payoffs, change the equilibrium.' },
+                { label: 'THE SOLUTION', text: 'Three-layer infrastructure: fraud detection that works, trust scoring that restructures incentives, and a cross-jurisdiction fraud intelligence exchange.' },
               ].map((item, i) => (
-                <div
-                  key={i}
-                  style={{
-                    paddingTop: '20px',
-                    paddingBottom: '20px',
-                    borderTop: '1px solid #E0E0E0',
-                    display: 'grid',
-                    gridTemplateColumns: '120px 1fr',
-                    gap: '24px',
-                    alignItems: 'start',
-                  }}
-                >
-                  <span style={{
-                    fontSize: '9px',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: '#888',
-                    fontWeight: 500,
-                    paddingTop: '2px',
-                  }}>
-                    {item.label}
-                  </span>
-                  <span style={{ fontSize: '13px', color: '#000', lineHeight: 1.65 }}>
-                    {item.text}
-                  </span>
+                <div key={i} style={rowStyle}>
+                  <span style={rowLabel}>{item.label}</span>
+                  <span style={{ fontSize: '13px', color: '#000', lineHeight: 1.65 }}>{item.text}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <hr className="divider" />
+
+        {/* CASE STUDY */}
+        <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
+          <div style={container}>
+            <div className="reveal" ref={(el) => addRevealRef(el, 3)}>
+              <p className="section-label">03 — PROOF OF CONCEPT</p>
+              <h2 className="serif" style={{ fontSize: '34px', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
+                This has already changed government policy.
+              </h2>
+              <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, maxWidth: '560px' }}>
+                Before WITIA existed as a company, its founder applied the same analytical methodology to a major national procurement body in West Africa — surfacing anomalous spend patterns at scale that directly informed how a government jurisdiction changed the way it protects its citizens. The work, conducted as part of a Cambridge dissertation, was recognised as exceptional academic achievement and covered by Gonville & Caius College.
+              </p>
+              <p style={{ marginTop: '16px', fontSize: '13px', color: '#555', lineHeight: 1.7, maxWidth: '560px' }}>
+                That engagement was bound by confidentiality obligations. What we can say: the methodology works. WITIA is its productisation.
+              </p>
+              <div style={{ marginTop: '24px' }}>
+                <a href="https://www.cai.cam.ac.uk/news/following-north-star" target="_blank" rel="noopener noreferrer" style={{ ...ctaLink, fontSize: '11px' }}>
+                  READ THE CAMBRIDGE FEATURE →
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -217,71 +191,47 @@ export default function Home() {
         {/* PLATFORM */}
         <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
           <div style={container}>
-            <div className="reveal" ref={(el) => addRevealRef(el, 3)}>
-              <p className="section-label">03 — OUR PLATFORM</p>
+            <div className="reveal" ref={(el) => addRevealRef(el, 4)}>
+              <p className="section-label">04 — THE PLATFORM</p>
               <h2 className="serif" style={{ fontSize: '34px', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
-                What We Do
+                Three layers. One immune system.
               </h2>
               <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7 }}>
-                Three layers of infrastructure, each valuable standalone, together forming an immune system for government procurement.
+                Each layer delivers value standalone. Together, they make procurement corruption economically irrational.
               </p>
-              <div style={{ marginTop: '24px' }}>
-                <a href="#contact" style={ctaLink}>VIEW TECHNICAL ARCHITECTURE →</a>
-              </div>
             </div>
 
             <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
                 {
-                  topTags: ['DETECTION', 'ML'],
+                  topTags: ['DETECTION'],
                   title: 'Fraud Detection',
-                  body: 'Ensemble AI combining five models — Isolation Forest, LOF, DBSCAN, One-Class SVM, and Autoencoder — reducing false positives from 90–95% to actionable, explainable alerts with full audit trails.',
-                  bottomTags: ['Isolation Forest', 'Graph ML', 'Explainable AI', 'Entity Resolution'],
+                  body: 'AI-powered anomaly detection that cuts false positives from 90–95% to actionable, explainable alerts — with full audit trails for every finding.',
+                  bottomTags: ['Ensemble ML', 'Explainable AI', 'Entity Resolution', 'Graph Analysis'],
                 },
                 {
-                  topTags: ['TRUST', 'SCORING'],
+                  topTags: ['TRUST SCORING'],
                   title: 'Vendor Trust Scoring',
-                  body: 'Vendors scored continuously across six dimensions using TOPSIS ranking with Bayesian confidence intervals. Top-quartile vendors earn expedited payments. Falling scores trigger audit probability increases.',
-                  bottomTags: ['TOPSIS', 'Bayesian', 'Continuous', '6 Dimensions'],
+                  body: 'Vendors scored continuously across six dimensions. Top-quartile vendors earn expedited payments. Falling scores trigger audit probability increases. Fraud becomes irrational before it starts.',
+                  bottomTags: ['Continuous Monitoring', 'Bayesian Scoring', '6 Dimensions'],
                 },
                 {
-                  topTags: ['INTELLIGENCE', 'EXCHANGE'],
+                  topTags: ['INTELLIGENCE EXCHANGE'],
                   title: 'Fraud Intelligence Exchange',
-                  body: 'Fraud patterns caught in Birmingham train the model protecting Maricopa County. The credit bureau insight applied to procurement: reputation made portable, enforcement made collective.',
+                  body: 'Fraud caught in one jurisdiction trains the model protecting the next. The credit bureau insight applied to procurement: reputation made portable, enforcement made collective.',
                   bottomTags: ['Cross-jurisdiction', 'Network Effects', 'Privacy-preserving'],
                 },
               ].map((card, i) => (
-                <div
-                  key={i}
-                  className="reveal"
-                  ref={(el) => addRevealRef(el, 4 + i)}
-                  style={{
-                    background: '#F5F5F5',
-                    borderRadius: '8px',
-                    padding: '24px',
-                  }}
-                >
+                <div key={i} className="reveal" ref={(el) => addRevealRef(el, 5 + i)} style={{ background: '#F5F5F5', borderRadius: '8px', padding: '24px' }}>
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    {card.topTags.map((tag) => (
-                      <span key={tag} style={tagPill}>{tag}</span>
-                    ))}
+                    {card.topTags.map((tag) => (<span key={tag} style={tagPill}>{tag}</span>))}
                   </div>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    color: '#000',
-                    fontFamily: "'Inter', sans-serif",
-                    marginBottom: '10px',
-                  }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#000', fontFamily: "'Inter', sans-serif", marginBottom: '10px' }}>
                     {card.title}
                   </h3>
-                  <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.65 }}>
-                    {card.body}
-                  </p>
+                  <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.65 }}>{card.body}</p>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                    {card.bottomTags.map((tag) => (
-                      <span key={tag} style={tagPill}>{tag}</span>
-                    ))}
+                    {card.bottomTags.map((tag) => (<span key={tag} style={tagPill}>{tag}</span>))}
                   </div>
                 </div>
               ))}
@@ -289,30 +239,13 @@ export default function Home() {
           </div>
         </section>
 
-        {/* TRACTION BAR */}
-        <div style={{
-          paddingTop: '32px',
-          paddingBottom: '32px',
-          borderTop: '1px solid #E0E0E0',
-          borderBottom: '1px solid #E0E0E0',
-          textAlign: 'center',
-        }}>
-          <p style={{
-            fontSize: '10px',
-            letterSpacing: '0.08em',
-            color: '#888',
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 500,
-          }}>
-            UK CABINET OFFICE · BIRMINGHAM CITY COUNCIL · EMERGENT VENTURES · PROMETHEUS X FELLOWSHIP
-          </p>
-        </div>
+        <hr className="divider" />
 
         {/* FOUNDER */}
         <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
           <div style={container}>
-            <div className="reveal" ref={(el) => addRevealRef(el, 7)}>
-              <p className="section-label">04 — THE FOUNDER</p>
+            <div className="reveal" ref={(el) => addRevealRef(el, 8)}>
+              <p className="section-label">05 — THE FOUNDER</p>
               <h2 className="serif" style={{ fontSize: '34px', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
                 Built by experience.
               </h2>
@@ -320,30 +253,10 @@ export default function Home() {
                 Jordan Anthony Unokesan is a Multi Award-Winning Starred First Class with Distinction Cambridge Graduate, ranked 1st of 71 in Land Economy at Gonville & Caius College. Founder of WITIA and the charity Empowered Voices, Emergent Ventures Fellow, Prometheus X Fellow, and ranked 7th of 150 in the Powerlist Future Leaders Magazine — with prior experience at McKinsey, Barings, and Doughty Street Chambers.
               </p>
               <div style={{ marginTop: '24px' }}>
-                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" style={ctaLink}>
+                <a href="https://www.linkedin.com/in/jordan-unokesan" target="_blank" rel="noopener noreferrer" style={ctaLink}>
                   CONNECT ON LINKEDIN →
                 </a>
               </div>
-            </div>
-
-            <div className="reveal" ref={(el) => addRevealRef(el, 8)}>
-              {[{ cat: '', text: '' }].filter(() => false).map((item, i) => (
-                <div key={i}>
-                  <span style={{
-                    fontSize: '9px',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: '#888',
-                    fontWeight: 500,
-                    paddingTop: '2px',
-                  }}>
-                    {item.cat}
-                  </span>
-                  <span style={{ fontSize: '13px', color: '#000', lineHeight: 1.65 }}>
-                    {item.text}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -354,7 +267,7 @@ export default function Home() {
         <section id="contact" style={{ paddingTop: '64px', paddingBottom: '64px' }}>
           <div style={container}>
             <div className="reveal" ref={(el) => addRevealRef(el, 9)}>
-              <p className="section-label">05 — CONTACT</p>
+              <p className="section-label">06 — CONTACT</p>
               <h2 className="serif" style={{ fontSize: '34px', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
                 Work with us.
               </h2>
@@ -365,80 +278,37 @@ export default function Home() {
 
             <div className="reveal" ref={(el) => addRevealRef(el, 10)} style={{ marginTop: '40px', maxWidth: '480px' }}>
               {submitted ? (
-                <p style={{
-                  fontFamily: 'Georgia, serif',
-                  fontStyle: 'italic',
-                  fontSize: '15px',
-                  color: '#000',
-                  lineHeight: 1.7,
-                }}>
+                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '15px', color: '#000', lineHeight: 1.7 }}>
                   Message received. We&apos;ll be in touch.
                 </p>
               ) : (
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <input
-                    type="text"
-                    placeholder="Name"
-                    required
-                    value={formState.name}
-                    onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Organisation"
-                    required
-                    value={formState.org}
-                    onChange={(e) => setFormState({ ...formState, org: e.target.value })}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Role"
-                    required
-                    value={formState.role}
-                    onChange={(e) => setFormState({ ...formState, role: e.target.value })}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
-                  />
+                  {(['Name', 'Organisation', 'Role'] as const).map((placeholder) => (
+                    <input
+                      key={placeholder}
+                      type="text"
+                      placeholder={placeholder}
+                      required
+                      style={inputStyle}
+                      onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
+                      onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
+                    />
+                  ))}
                   <textarea
                     placeholder="Message"
                     rows={4}
                     required
-                    value={formState.message}
-                    onChange={(e) => setFormState({ ...formState, message: e.target.value })}
-                    style={{
-                      ...inputStyle,
-                      resize: 'vertical',
-                      marginTop: '8px',
-                    }}
+                    style={{ ...inputStyle, resize: 'vertical', marginTop: '8px' }}
                     onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
                     onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
                   />
-                  <button
-                    type="submit"
-                    style={{
-                      ...ctaLink,
-                      marginTop: '20px',
-                      fontSize: '11px',
-                      letterSpacing: '0.1em',
-                    }}
-                  >
+                  <button type="submit" style={{ ...ctaLink, marginTop: '20px', fontSize: '11px', letterSpacing: '0.1em' }}>
                     SEND MESSAGE →
                   </button>
                 </form>
               )}
-
               <p style={{ marginTop: '32px' }}>
-                <a
-                  href="mailto:jordan@witia.ai"
-                  style={{ fontSize: '13px', color: '#000', textDecoration: 'underline', fontFamily: "'Inter', sans-serif" }}
-                >
+                <a href="mailto:jordan@witia.ai" style={{ fontSize: '13px', color: '#000', textDecoration: 'underline', fontFamily: "'Inter', sans-serif" }}>
                   jordan@witia.ai
                 </a>
               </p>
@@ -447,11 +317,7 @@ export default function Home() {
         </section>
 
         {/* FOOTER */}
-        <footer style={{
-          borderTop: '1px solid #E0E0E0',
-          paddingTop: '24px',
-          paddingBottom: '24px',
-        }}>
+        <footer style={{ borderTop: '1px solid #E0E0E0', paddingTop: '24px', paddingBottom: '24px' }}>
           <div style={{ ...container, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif" }}>© 2026 WITIA LTD</span>
             <span style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif" }}>witia.ai</span>
