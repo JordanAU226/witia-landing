@@ -164,7 +164,7 @@ export default function Home() {
 
             <div className="reveal" ref={(el) => addRevealRef(el, 2)}>
               {[
-                { label: 'THE PROBLEM', text: '£81 billion in UK public procurement fraud detected in 2023-24 alone. Current systems generate 90-95% false positives, drowning teams in noise while real fraud passes through.' },
+                { label: 'THE PROBLEM', text: 'Governments spend $9.5 trillion on public procurement annually. The UN estimates $2.6 trillion is lost to corruption each year - 5% of global GDP. In the UK alone, the National Audit Office estimates £81 billion lost to fraud and error in 2023-24. Current detection systems generate 90-95% false positives, drowning teams in noise while real fraud passes through.' },
                 { label: 'THE INSIGHT', text: 'The honest contractor faces economic ruin for refusing to bribe when competitors do not. Change the payoffs, change the equilibrium.' },
                 { label: 'THE SOLUTION', text: 'Three-layer infrastructure: fraud detection that works, trust scoring that restructures incentives, and a cross-jurisdiction fraud intelligence exchange.' },
               ].map((item, i) => (
