@@ -136,7 +136,7 @@ export default function Home() {
                 WITIA is an AI-powered trust layer for government procurement - combining fraud detection, vendor trust scoring, and a cross-jurisdiction intelligence exchange.
               </p>
               <p style={{ marginTop: '12px', fontSize: '13px', color: '#888', lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}>
-                Built by teams from Cambridge and McKinsey. Backed by Emergent Ventures and Prometheus Fellowship.
+                Built by Award Winning Cambridge Alum. Backed by Emergent Ventures and Prometheus X Talent.
               </p>
               <div style={{ marginTop: '28px' }}>
                 <a href="#contact" className="cta-link" style={{ fontSize: '11px' }}>REQUEST A PILOT -&gt;</a>
