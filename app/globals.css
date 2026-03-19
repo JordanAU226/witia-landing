@@ -19,7 +19,7 @@ input, textarea, button { font-family: 'Inter', -apple-system, sans-serif; }
   background: #040408;
   display: flex;
   align-items: center;
-  min-height: 600px;
+  min-height: 650px;
 }
 .globe-text {
   flex: 0 0 40%;
@@ -27,7 +27,7 @@ input, textarea, button { font-family: 'Inter', -apple-system, sans-serif; }
 }
 .globe-canvas {
   flex: 1;
-  height: 600px;
+  height: 650px;
   position: relative;
 }
 @media (max-width: 768px) {
