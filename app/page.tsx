@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
-const GlobeIllustration = dynamic(() => import('../components/GlobeIllustration'), { ssr: false });
+const PremiumGlobe = dynamic(() => import('../components/PremiumGlobe'), { ssr: false });
 
 
 export default function Home() {
@@ -102,7 +102,7 @@ export default function Home() {
         }
         .hero-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 0.84fr 1.16fr;
           gap: 48px;
           align-items: center;
         }
@@ -187,7 +187,7 @@ export default function Home() {
 
               {/* Right: Globe */}
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <GlobeIllustration size={440} />
+                <PremiumGlobe size={520} />
               </div>
             </div>
           </div>
