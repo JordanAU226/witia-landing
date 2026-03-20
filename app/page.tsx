@@ -187,7 +187,7 @@ export default function Home() {
 
               {/* Right: Globe */}
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <GlobeIllustration size={440} rotation={-30} />
+                <GlobeIllustration size={440} />
               </div>
             </div>
           </div>

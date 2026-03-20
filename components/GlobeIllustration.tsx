@@ -1,393 +1,351 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import * as THREE from 'three'
 
-// High-quality simplified coastline/border coordinates [lng, lat]
-// More points = more accurate continent outlines
-const COASTLINES: number[][][] = [
-  // North America - detailed coastline
-  [
-    [-52,47],[-56,47],[-60,46],[-64,44],[-66,44],[-67,45],[-70,43],
-    [-71,42],[-74,41],[-76,39],[-77,35],[-80,32],[-81,31],[-82,30],
-    [-85,30],[-88,30],[-90,29],[-89,26],[-92,25],[-94,26],[-97,26],
-    [-97,28],[-100,28],[-105,22],[-109,23],[-110,24],[-112,28],
-    [-117,30],[-118,32],[-120,34],[-122,37],[-124,40],[-124,44],
-    [-124,48],[-123,49],[-120,49],[-115,49],[-110,49],[-104,49],
-    [-98,49],[-90,49],[-85,47],[-82,45],[-80,44],[-78,44],[-76,44],
-    [-74,45],[-72,45],[-70,47],[-68,47],[-66,45],[-64,44],[-62,45],
-    [-60,46],[-58,47],[-56,47],[-54,48],[-53,47],[-54,46],[-57,46],
-    [-60,47],[-64,48],[-66,49],[-70,50],[-74,52],[-78,54],[-80,56],
-    [-84,58],[-88,60],[-90,62],[-88,64],[-84,66],[-80,68],[-75,70],
-    [-70,70],[-65,68],[-62,66],[-60,65],[-58,64],[-55,62],[-54,60],
-    [-55,58],[-57,56],[-60,55],[-64,54],[-68,52],[-70,50],[-72,48],
-    [-72,46],[-68,45],[-64,44]
-  ],
-  // Greenland
-  [
-    [-45,84],[-30,83],[-18,80],[-16,77],[-20,74],[-26,70],[-32,68],
-    [-40,66],[-48,66],[-54,68],[-56,70],[-54,73],[-48,77],[-45,80],[-45,84]
-  ],
-  // South America
-  [
-    [-80,10],[-77,8],[-76,6],[-75,4],[-72,2],[-68,2],[-62,2],[-55,2],
-    [-52,4],[-50,2],[-48,0],[-44,-2],[-38,-4],[-35,-6],[-35,-10],
-    [-38,-14],[-40,-20],[-42,-24],[-46,-28],[-52,-32],[-56,-36],
-    [-62,-40],[-65,-42],[-66,-46],[-66,-52],[-68,-54],[-70,-52],
-    [-72,-48],[-72,-44],[-70,-38],[-68,-32],[-70,-26],[-70,-20],
-    [-76,-14],[-78,-8],[-80,-4],[-80,0],[-80,6],[-80,10]
-  ],
-  // Western Europe
-  [
-    [-10,36],[0,36],[4,36],[8,38],[14,38],[16,40],[18,40],[20,42],
-    [24,42],[28,42],[30,44],[28,46],[24,48],[22,50],[20,52],[18,54],
-    [16,56],[12,56],[8,58],[4,58],[0,58],[-4,58],[-6,56],[-8,54],
-    [-10,52],[-8,50],[-4,48],[-4,46],[-2,44],[0,44],[4,44],[6,44],
-    [8,42],[12,40],[14,40],[16,38],[12,38],[8,38],[4,36],[-2,36],[-8,36],[-10,36]
-  ],
-  // Northern Europe / Scandinavia
-  [
-    [4,52],[8,54],[12,56],[16,58],[20,60],[22,62],[24,64],[26,66],
-    [28,68],[26,70],[22,70],[18,70],[14,70],[10,68],[8,66],[6,62],
-    [4,58],[4,54],[4,52]
-  ],
-  // Africa
-  [
-    [-18,16],[-16,20],[-14,22],[-10,22],[-6,22],[-2,22],[2,18],
-    [4,14],[6,10],[4,6],[2,4],[0,2],[2,0],[4,-2],[6,-4],[8,-6],
-    [10,-8],[12,-10],[14,-14],[16,-18],[18,-22],[20,-26],[22,-30],
-    [24,-34],[26,-34],[28,-32],[30,-28],[32,-24],[34,-20],[36,-16],
-    [38,-12],[40,-8],[42,-4],[44,0],[44,4],[42,8],[40,12],[38,16],
-    [40,20],[42,22],[44,14],[42,8],[38,4],[36,2],[34,4],[32,6],
-    [30,8],[28,10],[26,12],[24,14],[22,14],[20,16],[18,16],[16,16],
-    [14,14],[12,12],[10,10],[8,8],[6,8],[4,6],[2,6],[0,8],
-    [-2,10],[-4,12],[-6,12],[-8,10],[-10,8],[-12,8],[-14,10],
-    [-16,12],[-18,14],[-18,16]
-  ],
-  // Asia - Western
-  [
-    [28,42],[32,40],[36,38],[38,38],[40,36],[44,38],[48,38],[52,40],
-    [56,42],[60,42],[62,40],[64,38],[66,36],[68,36],[70,34],[72,34],
-    [76,32],[80,30],[84,28],[88,26],[90,24],[92,22],[96,20],[100,18],
-    [102,18],[104,20],[106,20],[108,18],[110,16],[112,14],[114,12],
-    [114,8],[110,4],[106,2],[104,0],[102,-2],[104,-4],[106,-6],
-    [108,-8],[110,-8],[112,-6],[114,-4],[116,-2],[118,0],[120,2],
-    [122,4],[124,6],[124,10],[122,14],[120,18],[120,22],[122,24],
-    [124,28],[126,32],[130,34],[132,36],[134,38],[136,40],[138,42],
-    [140,44],[142,46],[142,50],[138,52],[134,54],[130,56],[126,58],
-    [122,60],[118,62],[114,64],[108,66],[100,68],[92,68],[86,68],
-    [80,70],[72,70],[64,68],[56,66],[50,64],[44,60],[40,58],[36,56],
-    [32,54],[28,52],[26,48],[28,44],[28,42]
-  ],
-  // Australia
-  [
-    [114,-22],[116,-20],[118,-18],[122,-18],[126,-16],[130,-14],
-    [132,-12],[136,-12],[138,-14],[140,-16],[142,-18],[144,-18],
-    [146,-20],[148,-22],[150,-24],[152,-26],[154,-28],[154,-32],
-    [152,-36],[150,-38],[148,-40],[144,-40],[140,-38],[136,-36],
-    [130,-34],[124,-34],[118,-32],[114,-28],[114,-24],[114,-22]
-  ],
-]
-
-// Network nodes - represent jurisdictions in the WITIA network
 const NODES = [
-  { lng: -0.1, lat: 51.5, label: 'London' },
-  { lng: -1.9, lat: 52.5, label: 'Birmingham' },
-  { lng: 4.4, lat: 50.8, label: 'Brussels' },
-  { lng: -74.0, lat: 40.7, label: 'New York' },
-  { lng: -77.0, lat: 38.9, label: 'Washington' },
-  { lng: -112.1, lat: 33.4, label: 'Phoenix' },
-  { lng: 3.4, lat: 6.5, label: 'Lagos' },
-  { lng: 36.8, lat: -1.3, label: 'Nairobi' },
-  { lng: 103.8, lat: 1.3, label: 'Singapore' },
+  { lng: -0.1,   lat: 51.5,  label: 'London' },
+  { lng: -1.9,   lat: 52.5,  label: 'Birmingham' },
+  { lng: 4.4,    lat: 50.8,  label: 'Brussels' },
+  { lng: -74.0,  lat: 40.7,  label: 'New York' },
+  { lng: -77.0,  lat: 38.9,  label: 'Washington' },
+  { lng: -112.1, lat: 33.4,  label: 'Phoenix' },
+  { lng: 3.4,    lat: 6.5,   label: 'Lagos' },
+  { lng: 36.8,   lat: -1.3,  label: 'Nairobi' },
+  { lng: 103.8,  lat: 1.3,   label: 'Singapore' },
 ]
 
-// Arc connections between nodes
-const ARCS = [
-  [0, 1], // London - Birmingham
-  [0, 2], // London - Brussels
-  [0, 3], // London - New York
-  [0, 6], // London - Lagos
-  [3, 4], // NY - Washington
-  [3, 5], // NY - Phoenix
-  [2, 7], // Brussels - Nairobi
-  [6, 7], // Lagos - Nairobi
-  [7, 8], // Nairobi - Singapore
-  [3, 8], // NY - Singapore
+const ARC_PAIRS = [
+  [0, 1], [0, 2], [0, 3], [0, 6],
+  [3, 4], [3, 5], [2, 7], [6, 7],
+  [7, 8], [3, 8],
 ]
 
-function project(lng: number, lat: number, cx: number, cy: number, r: number, rotY: number) {
-  const adjustedLng = lng + rotY
-  const lngRad = adjustedLng * Math.PI / 180
-  const latRad = lat * Math.PI / 180
-
-  const cosLat = Math.cos(latRad)
-  const sinLat = Math.sin(latRad)
-  const cosLng = Math.cos(lngRad)
-  const sinLng = Math.sin(lngRad)
-
-  // Orthographic projection
-  const x = r * cosLat * sinLng
-  const y = -r * sinLat
-  const z = cosLat * cosLng // depth (positive = facing viewer)
-
-  return {
-    x: cx + x,
-    y: cy + y,
-    z,
-    visible: z > 0,
-  }
+function latLngToVec3(lat: number, lng: number, r: number): THREE.Vector3 {
+  const phi = (90 - lat) * (Math.PI / 180)
+  const theta = (lng + 180) * (Math.PI / 180)
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(theta),
+     r * Math.cos(phi),
+     r * Math.sin(phi) * Math.sin(theta)
+  )
 }
 
-function getArcPoints(
-  n1: { lng: number; lat: number },
-  n2: { lng: number; lat: number },
-  cx: number, cy: number, r: number, rotY: number,
-  steps = 60
-): Array<{ x: number; y: number; z: number; visible: boolean }> {
-  const points = []
-  // Great circle arc
-  const lat1 = n1.lat * Math.PI / 180
-  const lng1 = n1.lng * Math.PI / 180
-  const lat2 = n2.lat * Math.PI / 180
-  const lng2 = n2.lng * Math.PI / 180
+// Create a canvas texture for the globe — draws lat/lng grid + coastline outlines
+function createGlobeTexture(w = 2048, h = 1024): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = w; canvas.height = h
+  const ctx = canvas.getContext('2d')!
 
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps
-    // Slerp between two points on unit sphere, elevated for arc
-    const elevation = 0.35 * Math.sin(Math.PI * t) // arc height above surface
+  // Background — warm cream
+  ctx.fillStyle = '#F5F3EF'
+  ctx.fillRect(0, 0, w, h)
 
-    const lat = lat1 + (lat2 - lat1) * t
-    const lng = lng1 + (lng2 - lng1) * t
-
-    // Slightly elevate the midpoint
-    const adjustedLng = (lng * 180 / Math.PI)
-    const adjustedLat = (lat * 180 / Math.PI)
-
-    const lngRad = (adjustedLng + rotY) * Math.PI / 180
-    const latRad = adjustedLat * Math.PI / 180
-
-    const er = r * (1 + elevation)
-    const cosLat = Math.cos(latRad)
-    const x = er * cosLat * Math.sin(lngRad)
-    const y = -er * Math.sin(latRad)
-    const z = cosLat * Math.cos(lngRad)
-
-    points.push({ x: cx + x, y: cy + y, z, visible: z > 0 })
+  // Grid lines
+  ctx.strokeStyle = 'rgba(180, 168, 152, 0.25)'
+  ctx.lineWidth = 0.8
+  for (let lng = -180; lng <= 180; lng += 15) {
+    const x = ((lng + 180) / 360) * w
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke()
   }
-  return points
+  for (let lat = -90; lat <= 90; lat += 15) {
+    const y = ((90 - lat) / 180) * h
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
+  }
+
+  // Coastlines — draw as thick strokes on the equirectangular texture
+  // Each array is [lng, lat] pairs forming a closed polygon
+  const coastlines: number[][][] = [
+    // North America
+    [[-52,47],[-56,47],[-60,46],[-64,44],[-67,45],[-70,43],[-74,41],
+     [-76,39],[-77,35],[-80,32],[-82,30],[-85,30],[-90,29],[-92,25],
+     [-97,26],[-100,28],[-109,23],[-112,28],[-117,30],[-120,34],
+     [-124,40],[-124,48],[-123,49],[-104,49],[-90,49],[-82,45],
+     [-80,44],[-74,45],[-70,47],[-66,45],[-64,44],[-60,46],[-54,48],
+     [-57,46],[-64,48],[-70,50],[-78,54],[-84,58],[-90,62],
+     [-84,66],[-80,68],[-70,70],[-65,68],[-60,65],[-55,62],
+     [-57,56],[-64,54],[-70,50],[-72,48],[-68,45],[-64,44]],
+    // Greenland
+    [[-45,84],[-18,80],[-16,77],[-20,74],[-26,70],[-32,68],[-40,66],
+     [-48,66],[-56,70],[-54,73],[-48,77],[-45,80],[-45,84]],
+    // South America
+    [[-80,10],[-75,4],[-68,2],[-52,4],[-48,0],[-38,-4],[-35,-10],
+     [-38,-14],[-42,-24],[-52,-32],[-62,-40],[-65,-42],[-66,-52],
+     [-70,-52],[-72,-44],[-70,-26],[-76,-14],[-80,-4],[-80,10]],
+    // Europe
+    [[-10,36],[4,36],[8,38],[14,38],[18,40],[24,42],[28,42],[30,44],
+     [24,48],[20,52],[18,54],[12,56],[4,58],[0,58],[-4,58],[-8,54],
+     [-10,52],[-8,50],[-4,46],[0,44],[6,44],[8,42],[14,40],[10,36],[-10,36]],
+    // Scandinavia
+    [[4,52],[8,54],[12,56],[20,60],[24,64],[26,66],[28,68],[22,70],
+     [14,70],[8,66],[6,62],[4,58],[4,52]],
+    // Africa
+    [[-18,16],[-10,22],[2,18],[4,14],[4,6],[0,2],[4,-2],[8,-6],
+     [14,-14],[18,-22],[22,-30],[24,-34],[28,-32],[34,-20],[38,-12],
+     [42,-4],[44,4],[42,8],[38,16],[40,20],[38,4],[32,6],[28,10],
+     [22,14],[16,16],[8,8],[0,8],[-6,12],[-14,10],[-18,14],[-18,16]],
+    // Asia (simplified)
+    [[28,42],[36,38],[40,36],[48,38],[56,42],[64,38],[68,36],[72,34],
+     [80,30],[88,26],[96,20],[100,18],[104,20],[108,18],[110,16],
+     [114,8],[110,4],[106,2],[102,-2],[106,-6],[110,-8],[114,-4],
+     [118,0],[122,4],[124,10],[122,14],[120,22],[122,24],[126,32],
+     [132,36],[136,40],[138,42],[142,46],[138,52],[126,58],[118,62],
+     [100,60],[86,68],[72,70],[56,66],[44,60],[36,56],[28,52],
+     [26,48],[28,44],[28,42]],
+    // Australia
+    [[114,-22],[118,-18],[122,-18],[126,-16],[132,-12],[136,-12],
+     [140,-16],[144,-18],[148,-22],[152,-26],[154,-32],[150,-38],
+     [144,-40],[136,-36],[124,-34],[118,-32],[114,-28],[114,-22]],
+  ]
+
+  // Draw coastlines as strokes
+  ctx.strokeStyle = 'rgba(70, 58, 45, 0.85)'
+  ctx.lineWidth = 2.5
+  ctx.lineJoin = 'round'
+  ctx.lineCap = 'round'
+
+  coastlines.forEach(coast => {
+    ctx.beginPath()
+    coast.forEach(([lng, lat], i) => {
+      // Handle antimeridian wrap
+      const x = ((lng + 180) / 360) * w
+      const y = ((90 - lat) / 180) * h
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    })
+    ctx.closePath()
+    ctx.stroke()
+
+    // Also fill very lightly
+    ctx.fillStyle = 'rgba(200, 190, 178, 0.18)'
+    ctx.fill()
+  })
+
+  // Stipple dots along coastlines
+  ctx.fillStyle = 'rgba(70, 58, 45, 0.7)'
+  coastlines.forEach(coast => {
+    for (let i = 0; i < coast.length - 1; i++) {
+      const [lng1, lat1] = coast[i]
+      const [lng2, lat2] = coast[i + 1]
+      const dist = Math.hypot(lng2 - lng1, lat2 - lat1)
+      const steps = Math.ceil(dist * 3)
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps
+        const lng = lng1 + (lng2 - lng1) * t
+        const lat = lat1 + (lat2 - lat1) * t
+        const x = ((lng + 180) / 360) * w
+        const y = ((90 - lat) / 180) * h
+        ctx.beginPath()
+        ctx.arc(x, y, 1.8, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+  })
+
+  return new THREE.CanvasTexture(canvas)
 }
 
-export default function GlobeIllustration({ size = 480, rotation = -20 }: { size?: number; rotation?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animRef = useRef<number>(0)
-  const rotRef = useRef(rotation)
-  const timeRef = useRef(0)
+export default function GlobeIllustration({ size = 480 }: { size?: number }) {
+  const mountRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')!
-    const dpr = Math.min(window.devicePixelRatio, 2)
-    canvas.width = size * dpr
-    canvas.height = size * dpr
-    ctx.scale(dpr, dpr)
+    const mount = mountRef.current
+    if (!mount) return
 
-    const cx = size / 2
-    const cy = size / 2
-    const r = size * 0.42
+    // Scene
+    const scene = new THREE.Scene()
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
+    camera.position.z = 2.8
 
-    let lastTime = performance.now()
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setSize(size, size)
+    renderer.setClearColor(0x000000, 0)
+    mount.appendChild(renderer.domElement)
 
-    function draw(now: number) {
-      const dt = now - lastTime
-      lastTime = now
-      rotRef.current += dt * 0.006 // degrees per ms — slow, elegant
-      timeRef.current = now
+    // Globe group
+    const group = new THREE.Group()
+    scene.add(group)
 
-      ctx.clearRect(0, 0, size, size)
-      const rot = rotRef.current
+    // Globe sphere with texture
+    const texture = createGlobeTexture()
+    const globeGeo = new THREE.SphereGeometry(1, 72, 72)
+    const globeMat = new THREE.MeshPhongMaterial({
+      map: texture,
+      shininess: 5,
+      specular: new THREE.Color(0xfaf8f5),
+    })
+    const globe = new THREE.Mesh(globeGeo, globeMat)
+    group.add(globe)
 
-      // — Globe background —
-      ctx.save()
-      ctx.beginPath()
-      ctx.arc(cx, cy, r, 0, Math.PI * 2)
-      ctx.fillStyle = '#F7F6F3'
-      ctx.fill()
-      ctx.restore()
+    // Subtle rim outline
+    const rimGeo = new THREE.SphereGeometry(1.001, 72, 72)
+    const rimMat = new THREE.MeshBasicMaterial({
+      color: 0xc0b8a8,
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0.4,
+    })
+    group.add(new THREE.Mesh(rimGeo, rimMat))
 
-      // — Globe outline —
-      ctx.beginPath()
-      ctx.arc(cx, cy, r, 0, Math.PI * 2)
-      ctx.strokeStyle = '#C8C2B8'
-      ctx.lineWidth = 1
-      ctx.stroke()
+    // Lighting
+    const ambient = new THREE.AmbientLight(0xffffff, 0.85)
+    scene.add(ambient)
+    const sun = new THREE.DirectionalLight(0xfff8f0, 0.6)
+    sun.position.set(4, 2, 4)
+    scene.add(sun)
+    const fill = new THREE.DirectionalLight(0xf0f4ff, 0.2)
+    fill.position.set(-4, -1, -2)
+    scene.add(fill)
 
-      // — Clip all content to globe —
-      ctx.save()
-      ctx.beginPath()
-      ctx.arc(cx, cy, r, 0, Math.PI * 2)
-      ctx.clip()
+    // City node dots
+    const nodePositions = NODES.map(n => latLngToVec3(n.lat, n.lng, 1.012))
+    const nodeMeshes: THREE.Mesh[] = []
+    nodePositions.forEach(pos => {
+      // Core dot
+      const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.022, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0x0a2342 })
+      )
+      dot.position.copy(pos)
+      group.add(dot)
+      nodeMeshes.push(dot)
 
-      // — Graticule lines —
-      ctx.strokeStyle = 'rgba(190, 182, 170, 0.35)'
-      ctx.lineWidth = 0.5
+      // Outer ring
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.038, 0.004, 8, 32),
+        new THREE.MeshBasicMaterial({ color: 0x0a2342, transparent: true, opacity: 0.5 })
+      )
+      ring.position.copy(pos)
+      ring.lookAt(new THREE.Vector3(0, 0, 0))
+      ring.rotateX(Math.PI / 2)
+      group.add(ring)
+    })
 
-      for (let lat = -75; lat <= 75; lat += 15) {
-        ctx.beginPath()
-        let first = true
-        let prevVisible = false
-        for (let lng = -180; lng <= 180; lng += 3) {
-          const p = project(lng, lat, cx, cy, r, rot)
-          if (!p.visible) { first = true; prevVisible = false; continue }
-          if (first || !prevVisible) { ctx.moveTo(p.x, p.y); first = false }
-          else ctx.lineTo(p.x, p.y)
-          prevVisible = true
-        }
-        ctx.stroke()
-      }
-
-      for (let lng = -165; lng <= 180; lng += 15) {
-        ctx.beginPath()
-        let first = true
-        let prevVisible = false
-        for (let lat = -88; lat <= 88; lat += 3) {
-          const p = project(lng, lat, cx, cy, r, rot)
-          if (!p.visible) { first = true; prevVisible = false; continue }
-          if (first || !prevVisible) { ctx.moveTo(p.x, p.y); first = false }
-          else ctx.lineTo(p.x, p.y)
-          prevVisible = true
-        }
-        ctx.stroke()
-      }
-
-      // — Coastlines with stipple dots along the path —
-      // Draw each coastline as a series of tiny dots following the outline
-      COASTLINES.forEach(coast => {
-        // First draw the faint line
-        ctx.beginPath()
-        ctx.strokeStyle = 'rgba(60, 50, 40, 0.9)'
-        ctx.lineWidth = 1.4
-        let first = true
-        coast.forEach(([lng, lat]) => {
-          const p = project(lng, lat, cx, cy, r, rot)
-          if (!p.visible) { first = true; return }
-          if (first) { ctx.moveTo(p.x, p.y); first = false }
-          else ctx.lineTo(p.x, p.y)
-        })
-        ctx.stroke()
-
-        // Then stipple dots along coastline
-        for (let i = 0; i < coast.length - 1; i++) {
-          const [lng1, lat1] = coast[i]
-          const [lng2, lat2] = coast[i + 1]
-          const steps = Math.ceil(Math.hypot(lng2 - lng1, lat2 - lat1) * 2)
-          for (let s = 0; s <= steps; s++) {
-            const t = s / steps
-            const lng = lng1 + (lng2 - lng1) * t
-            const lat = lat1 + (lat2 - lat1) * t
-            const p = project(lng, lat, cx, cy, r, rot)
-            if (!p.visible) continue
-            // Vary dot size slightly by depth
-            const dotR = 1.4 + p.z * 0.6
-            ctx.beginPath()
-            ctx.arc(p.x, p.y, dotR, 0, Math.PI * 2)
-            ctx.fillStyle = `rgba(60, 50, 40, ${0.75 + p.z * 0.25})`
-            ctx.fill()
-          }
-        }
-      })
-
-      // — Draw arcs —
-      ARCS.forEach(([i1, i2], arcIdx) => {
-        const n1 = NODES[i1]
-        const n2 = NODES[i2]
-        const arcPoints = getArcPoints(n1, n2, cx, cy, r, rot)
-
-        // Only draw if at least half the arc is visible
-        const visibleCount = arcPoints.filter(p => p.visible).length
-        if (visibleCount < arcPoints.length * 0.3) return
-
-        // Draw arc line - visible base
-        ctx.beginPath()
-        ctx.strokeStyle = 'rgba(10, 35, 66, 0.35)'
-        ctx.lineWidth = 1.5
-        let first = true
-        arcPoints.forEach(p => {
-          if (!p.visible) { first = true; return }
-          if (first) { ctx.moveTo(p.x, p.y); first = false }
-          else ctx.lineTo(p.x, p.y)
-        })
-        ctx.stroke()
-
-        // Animated pulse travelling along arc
-        const cycleDuration = 3000 + arcIdx * 700 // stagger cycles
-        const cyclePos = ((now + arcIdx * 1100) % cycleDuration) / cycleDuration
-        const pulseT = cyclePos
-        const pulseIdx = Math.floor(pulseT * arcPoints.length)
-
-        if (pulseIdx < arcPoints.length) {
-          const pp = arcPoints[pulseIdx]
-          if (pp.visible) {
-            // Glowing pulse dot
-            const gradient = ctx.createRadialGradient(pp.x, pp.y, 0, pp.x, pp.y, 10)
-            gradient.addColorStop(0, 'rgba(10, 35, 66, 1)')
-            gradient.addColorStop(0.4, 'rgba(10, 35, 66, 0.5)')
-            gradient.addColorStop(1, 'rgba(10, 35, 66, 0)')
-            ctx.beginPath()
-            ctx.arc(pp.x, pp.y, 10, 0, Math.PI * 2)
-            ctx.fillStyle = gradient
-            ctx.fill()
-
-            // Bright core
-            ctx.beginPath()
-            ctx.arc(pp.x, pp.y, 3, 0, Math.PI * 2)
-            ctx.fillStyle = '#0a2342'
-            ctx.fill()
-          }
-        }
-      })
-
-      // — Draw nodes —
-      NODES.forEach((node, i) => {
-        const p = project(node.lng, node.lat, cx, cy, r, rot)
-        if (!p.visible) return
-
-        // Outer ring
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2)
-        ctx.strokeStyle = 'rgba(10, 35, 66, 0.5)'
-        ctx.lineWidth = 1.2
-        ctx.stroke()
-
-        // Inner dot
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2)
-        ctx.fillStyle = '#0a2342'
-        ctx.fill()
-
-        // Pulse ring animation
-        const pulsePhase = (now / 2000 + i * 0.3) % 1
-        const pulseRadius = 7 + pulsePhase * 16
-        const pulseOpacity = (1 - pulsePhase) * 0.5
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, pulseRadius, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(10, 35, 66, ${pulseOpacity})`
-        ctx.lineWidth = 0.8
-        ctx.stroke()
-      })
-
-      ctx.restore()
-
-      animRef.current = requestAnimationFrame(draw)
+    // Arcs
+    interface ArcData {
+      points: THREE.Vector3[]
+      line: THREE.Line
+      pulseDot: THREE.Mesh
+      pulseMat: THREE.MeshBasicMaterial
+      lineMat: THREE.LineBasicMaterial
+      offset: number
     }
 
-    animRef.current = requestAnimationFrame(draw)
-    return () => cancelAnimationFrame(animRef.current)
-  }, [size, rotation])
+    const arcs: ArcData[] = ARC_PAIRS.map(([i1, i2], idx) => {
+      const v1 = latLngToVec3(NODES[i1].lat, NODES[i1].lng, 1.01)
+      const v2 = latLngToVec3(NODES[i2].lat, NODES[i2].lng, 1.01)
+
+      // Quadratic Bezier control point — elevated above surface
+      const mid = new THREE.Vector3().addVectors(v1, v2).multiplyScalar(0.5)
+      mid.normalize().multiplyScalar(1.42)
+
+      // Sample arc into points
+      const curve = new THREE.QuadraticBezierCurve3(v1, mid, v2)
+      const points = curve.getPoints(60)
+
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points)
+      const lineMat = new THREE.LineBasicMaterial({
+        color: 0x0a2342,
+        transparent: true,
+        opacity: 0.3,
+        linewidth: 1,
+      })
+      const line = new THREE.Line(lineGeo, lineMat)
+      group.add(line)
+
+      // Pulse dot
+      const pulseMat = new THREE.MeshBasicMaterial({
+        color: 0x0a2342,
+        transparent: true,
+        opacity: 0,
+      })
+      const pulseDot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.018, 12, 12),
+        pulseMat
+      )
+      group.add(pulseDot)
+
+      return { points, line, pulseDot, pulseMat, lineMat, offset: idx * 800 }
+    })
+
+    // Mouse drag
+    let isDragging = false
+    let prevX = 0
+    let autoRotSpeed = 0.0008
+
+    const onDown = (e: MouseEvent) => { isDragging = true; prevX = e.clientX }
+    const onMove = (e: MouseEvent) => {
+      if (!isDragging) return
+      const dx = e.clientX - prevX
+      group.rotation.y += dx * 0.005
+      prevX = e.clientX
+    }
+    const onUp = () => { isDragging = false }
+    const onEnter = () => { autoRotSpeed = 0.0002 }
+    const onLeave = () => { autoRotSpeed = 0.0008; isDragging = false }
+
+    renderer.domElement.addEventListener('mousedown', onDown)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    renderer.domElement.addEventListener('mouseenter', onEnter)
+    renderer.domElement.addEventListener('mouseleave', onLeave)
+
+    // Animation
+    let rafId: number
+    const animate = () => {
+      rafId = requestAnimationFrame(animate)
+      const now = Date.now()
+
+      if (!isDragging) group.rotation.y += autoRotSpeed
+
+      // Animate arcs
+      arcs.forEach(arc => {
+        const cycle = 3500
+        const t = ((now + arc.offset) % cycle) / cycle
+
+        // Fade arc line in/out
+        const lineOpacity = t < 0.15 ? t / 0.15 : t < 0.8 ? 1 : 1 - (t - 0.8) / 0.2
+        arc.lineMat.opacity = lineOpacity * 0.35
+
+        // Pulse dot travels along arc
+        const ptIdx = Math.floor(t * arc.points.length)
+        if (ptIdx < arc.points.length) {
+          arc.pulseDot.position.copy(arc.points[ptIdx])
+          arc.pulseMat.opacity = lineOpacity * 0.95
+        }
+      })
+
+      renderer.render(scene, camera)
+    }
+    animate()
+
+    // Resize
+    const ro = new ResizeObserver(() => {
+      const s = mount.clientWidth
+      camera.aspect = 1
+      camera.updateProjectionMatrix()
+      renderer.setSize(s, s)
+    })
+    ro.observe(mount)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      renderer.domElement.removeEventListener('mousedown', onDown)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      renderer.domElement.removeEventListener('mouseenter', onEnter)
+      renderer.domElement.removeEventListener('mouseleave', onLeave)
+      ro.disconnect()
+      renderer.dispose()
+      texture.dispose()
+      mount.removeChild(renderer.domElement)
+    }
+  }, [size])
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: `${size}px`, height: `${size}px`, display: 'block' }}
+    <div
+      ref={mountRef}
+      style={{ width: `${size}px`, height: `${size}px`, cursor: 'grab' }}
     />
   )
 }
