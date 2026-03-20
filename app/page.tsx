@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+
+const GlobeIllustration = dynamic(() => import('../components/GlobeIllustration'), { ssr: false });
 
 
 export default function Home() {
@@ -97,6 +100,21 @@ export default function Home() {
           gap: 24px;
           align-items: start;
         }
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 48px;
+          align-items: center;
+        }
+        @media (max-width: 768px) {
+          .hero-grid {
+            grid-template-columns: 1fr;
+          }
+          .hero-grid > div:last-child {
+            display: flex;
+            justify-content: center;
+          }
+        }
         @media (max-width: 600px) {
           .container {
             padding-left: 20px;
@@ -126,21 +144,50 @@ export default function Home() {
 
       <main>
         {/* HERO */}
-        <section style={{ paddingTop: '80px', paddingBottom: '60px' }}>
+        <section style={{ paddingTop: '80px', paddingBottom: '60px', overflow: 'hidden' }}>
           <div className="container">
-            <div className="reveal content-col" ref={(el) => addRevealRef(el, 0)}>
-              <p className="section-label">01 - THE MISSION</p>
-              <h1 className="serif" style={{ fontSize: 'clamp(32px, 5vw, 46px)', fontWeight: 400, lineHeight: 1.15, color: '#000', letterSpacing: '-0.01em' }}>
-                Making procurement corruption<br />economically irrational.
-              </h1>
-              <p style={{ marginTop: '20px', fontSize: '14px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
-                WITIA is an AI-powered trust layer for government procurement - combining fraud detection, vendor trust scoring, and a cross-jurisdiction intelligence exchange.
-              </p>
-              <p style={{ marginTop: '12px', fontSize: '13px', color: '#888', lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}>
-                Built by Award Winning Cambridge Alum. Backed by Emergent Ventures and Prometheus X Talent.
-              </p>
-              <div style={{ marginTop: '28px' }}>
-                <a href="#contact" className="cta-link" style={{ fontSize: '11px' }}>REQUEST A PILOT -&gt;</a>
+            <div className="hero-grid">
+              {/* Left: Text */}
+              <div className="reveal" ref={(el) => addRevealRef(el, 0)}>
+                <p className="section-label">01 - THE MISSION</p>
+                <h1 className="serif" style={{
+                  fontSize: 'clamp(32px, 4.5vw, 52px)',
+                  fontWeight: 400,
+                  lineHeight: 1.1,
+                  color: '#000',
+                  letterSpacing: '-0.02em',
+                }}>
+                  Making procurement<br />corruption<br />economically<br />irrational.
+                </h1>
+                <p style={{
+                  marginTop: '24px',
+                  fontSize: '14px',
+                  color: '#555',
+                  lineHeight: 1.7,
+                  fontFamily: "'Inter', sans-serif",
+                  maxWidth: '420px',
+                }}>
+                  WITIA is an AI-powered trust layer for government procurement - combining fraud detection, vendor trust scoring, and a cross-jurisdiction intelligence exchange.
+                </p>
+                <p style={{
+                  marginTop: '12px',
+                  fontSize: '12px',
+                  color: '#888',
+                  lineHeight: 1.6,
+                  fontFamily: "'Inter', sans-serif",
+                }}>
+                  Built by Award Winning Cambridge Alum. Backed by Emergent Ventures and Prometheus X Talent.
+                </p>
+                <div style={{ marginTop: '32px', display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <a href="#contact" className="cta-link" style={{ fontSize: '11px' }}>REQUEST A PILOT -&gt;</a>
+                  <span style={{ fontSize: '10px', color: '#aaa', fontFamily: "'Inter', sans-serif" }}>|</span>
+                  <a href="https://www.cai.cam.ac.uk/news/following-north-star" target="_blank" rel="noopener noreferrer" className="cta-link" style={{ fontSize: '11px' }}>READ OUR STORY -&gt;</a>
+                </div>
+              </div>
+
+              {/* Right: Globe */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <GlobeIllustration size={440} rotation={-30} />
               </div>
             </div>
           </div>
