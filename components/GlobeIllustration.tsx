@@ -264,8 +264,8 @@ export default function GlobeIllustration({ size = 480, rotation = -20 }: { size
       COASTLINES.forEach(coast => {
         // First draw the faint line
         ctx.beginPath()
-        ctx.strokeStyle = 'rgba(140, 130, 118, 0.5)'
-        ctx.lineWidth = 0.6
+        ctx.strokeStyle = 'rgba(60, 50, 40, 0.9)'
+        ctx.lineWidth = 1.4
         let first = true
         coast.forEach(([lng, lat]) => {
           const p = project(lng, lat, cx, cy, r, rot)
@@ -287,10 +287,10 @@ export default function GlobeIllustration({ size = 480, rotation = -20 }: { size
             const p = project(lng, lat, cx, cy, r, rot)
             if (!p.visible) continue
             // Vary dot size slightly by depth
-            const dotR = 0.8 + p.z * 0.4
+            const dotR = 1.4 + p.z * 0.6
             ctx.beginPath()
             ctx.arc(p.x, p.y, dotR, 0, Math.PI * 2)
-            ctx.fillStyle = `rgba(120, 110, 98, ${0.4 + p.z * 0.3})`
+            ctx.fillStyle = `rgba(60, 50, 40, ${0.75 + p.z * 0.25})`
             ctx.fill()
           }
         }
@@ -306,10 +306,10 @@ export default function GlobeIllustration({ size = 480, rotation = -20 }: { size
         const visibleCount = arcPoints.filter(p => p.visible).length
         if (visibleCount < arcPoints.length * 0.3) return
 
-        // Draw arc line - faint base
+        // Draw arc line - visible base
         ctx.beginPath()
-        ctx.strokeStyle = 'rgba(10, 35, 66, 0.15)'
-        ctx.lineWidth = 1
+        ctx.strokeStyle = 'rgba(10, 35, 66, 0.35)'
+        ctx.lineWidth = 1.5
         let first = true
         arcPoints.forEach(p => {
           if (!p.visible) { first = true; return }
@@ -328,18 +328,18 @@ export default function GlobeIllustration({ size = 480, rotation = -20 }: { size
           const pp = arcPoints[pulseIdx]
           if (pp.visible) {
             // Glowing pulse dot
-            const gradient = ctx.createRadialGradient(pp.x, pp.y, 0, pp.x, pp.y, 6)
-            gradient.addColorStop(0, 'rgba(10, 35, 66, 0.9)')
-            gradient.addColorStop(0.4, 'rgba(10, 35, 66, 0.4)')
+            const gradient = ctx.createRadialGradient(pp.x, pp.y, 0, pp.x, pp.y, 10)
+            gradient.addColorStop(0, 'rgba(10, 35, 66, 1)')
+            gradient.addColorStop(0.4, 'rgba(10, 35, 66, 0.5)')
             gradient.addColorStop(1, 'rgba(10, 35, 66, 0)')
             ctx.beginPath()
-            ctx.arc(pp.x, pp.y, 6, 0, Math.PI * 2)
+            ctx.arc(pp.x, pp.y, 10, 0, Math.PI * 2)
             ctx.fillStyle = gradient
             ctx.fill()
 
             // Bright core
             ctx.beginPath()
-            ctx.arc(pp.x, pp.y, 2, 0, Math.PI * 2)
+            ctx.arc(pp.x, pp.y, 3, 0, Math.PI * 2)
             ctx.fillStyle = '#0a2342'
             ctx.fill()
           }
@@ -353,21 +353,21 @@ export default function GlobeIllustration({ size = 480, rotation = -20 }: { size
 
         // Outer ring
         ctx.beginPath()
-        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2)
-        ctx.strokeStyle = 'rgba(10, 35, 66, 0.3)'
-        ctx.lineWidth = 1
+        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2)
+        ctx.strokeStyle = 'rgba(10, 35, 66, 0.5)'
+        ctx.lineWidth = 1.2
         ctx.stroke()
 
         // Inner dot
         ctx.beginPath()
-        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2)
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2)
         ctx.fillStyle = '#0a2342'
         ctx.fill()
 
         // Pulse ring animation
         const pulsePhase = (now / 2000 + i * 0.3) % 1
-        const pulseRadius = 5 + pulsePhase * 12
-        const pulseOpacity = (1 - pulsePhase) * 0.4
+        const pulseRadius = 7 + pulsePhase * 16
+        const pulseOpacity = (1 - pulsePhase) * 0.5
         ctx.beginPath()
         ctx.arc(p.x, p.y, pulseRadius, 0, Math.PI * 2)
         ctx.strokeStyle = `rgba(10, 35, 66, ${pulseOpacity})`
