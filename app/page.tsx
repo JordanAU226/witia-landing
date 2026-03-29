@@ -8,6 +8,9 @@ const PremiumGlobe = dynamic(() => import('../components/PremiumGlobe'), { ssr: 
 
 export default function Home() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const revealRefs = useRef<(HTMLElement | null)[]>([]);
 
   useEffect(() => {
@@ -27,9 +30,25 @@ export default function Home() {
     revealRefs.current[index] = el;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setSubmitError('Something went wrong. Please email team@witia.ai directly.');
+      }
+    } catch {
+      setSubmitError('Something went wrong. Please email team@witia.ai directly.');
+    }
+    setSubmitting(false);
   };
 
   const tagPill: React.CSSProperties = {
@@ -106,13 +125,17 @@ export default function Home() {
           gap: 48px;
           align-items: center;
         }
+        .globe-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
         @media (max-width: 768px) {
           .hero-grid {
             grid-template-columns: 1fr;
           }
-          .hero-grid > div:last-child {
-            display: flex;
-            justify-content: center;
+          .globe-container {
+            display: none;
           }
         }
         @media (max-width: 600px) {
@@ -180,13 +203,11 @@ export default function Home() {
                 </p>
                 <div style={{ marginTop: '32px', display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <a href="#contact" className="cta-link" style={{ fontSize: '11px' }}>REQUEST A PILOT -&gt;</a>
-                  <span style={{ fontSize: '10px', color: '#aaa', fontFamily: "'Inter', sans-serif" }}>|</span>
-                  <a href="https://www.cai.cam.ac.uk/news/following-north-star" target="_blank" rel="noopener noreferrer" className="cta-link" style={{ fontSize: '11px' }}>READ OUR STORY -&gt;</a>
                 </div>
               </div>
 
               {/* Right: Globe */}
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div className="globe-container">
                 <PremiumGlobe size={520} />
               </div>
             </div>
@@ -209,7 +230,6 @@ export default function Home() {
             </div>
 
             <hr className="divider" style={{ marginTop: '40px' }} />
-            
 
             <div className="reveal" ref={(el) => addRevealRef(el, 2)}>
               {[
@@ -228,36 +248,11 @@ export default function Home() {
 
         <hr className="divider" />
 
-        {/* CASE STUDY */}
-        <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
-          <div className="container">
-            <div className="reveal content-col" ref={(el) => addRevealRef(el, 3)}>
-              <p className="section-label">03 - PROOF OF CONCEPT</p>
-              <h2 className="serif" style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
-                This has already changed government policy.
-              </h2>
-              <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
-                Before WITIA existed as a company, its founder applied the same analytical methodology to a major national procurement body in West Africa - surfacing anomalous spend patterns at scale that directly informed how a government jurisdiction changed the way it protects its citizens. The work, conducted as part of a Cambridge dissertation, was recognised as exceptional academic achievement and covered by Gonville & Caius College.
-              </p>
-              <p style={{ marginTop: '16px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
-                That engagement was bound by confidentiality obligations. What we can say: the methodology works. WITIA is its productisation.
-              </p>
-              <div style={{ marginTop: '24px' }}>
-                <a href="https://www.cai.cam.ac.uk/news/following-north-star" target="_blank" rel="noopener noreferrer" className="cta-link" style={{ fontSize: '11px' }}>
-                  READ THE CAMBRIDGE FEATURE -&gt;
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <hr className="divider" />
-
         {/* PLATFORM */}
         <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
           <div className="container">
-            <div className="reveal content-col" ref={(el) => addRevealRef(el, 4)}>
-              <p className="section-label">04 - THE PLATFORM</p>
+            <div className="reveal content-col" ref={(el) => addRevealRef(el, 3)}>
+              <p className="section-label">03 - THE PLATFORM</p>
               <h2 className="serif" style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
                 Three layers. One immune system.
               </h2>
@@ -284,7 +279,7 @@ export default function Home() {
                   tags: ['Cross-jurisdiction', 'Network Effects', 'Privacy-preserving'],
                 },
               ].map((card, i) => (
-                <div key={i} className="reveal" ref={(el) => addRevealRef(el, 5 + i)} style={{ background: '#F5F5F5', borderRadius: '8px', padding: '24px' }}>
+                <div key={i} className="reveal" ref={(el) => addRevealRef(el, 4 + i)} style={{ background: '#F5F5F5', borderRadius: '8px', padding: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#000', fontFamily: "'Inter', sans-serif", marginBottom: '10px' }}>{card.title}</h3>
                   <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>{card.body}</p>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
@@ -292,6 +287,31 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <hr className="divider" />
+
+        {/* CASE STUDY */}
+        <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
+          <div className="container">
+            <div className="reveal content-col" ref={(el) => addRevealRef(el, 7)}>
+              <p className="section-label">04 - PROOF OF CONCEPT</p>
+              <h2 className="serif" style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
+                This has already changed government policy.
+              </h2>
+              <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
+                Before WITIA existed as a company, its founder applied the same analytical methodology to a major national procurement body in West Africa - surfacing anomalous spend patterns at scale that directly informed how a government jurisdiction changed the way it protects its citizens. The work, conducted as part of a Cambridge dissertation, was recognised as exceptional academic achievement and covered by Gonville & Caius College.
+              </p>
+              <p style={{ marginTop: '16px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
+                That engagement was bound by confidentiality obligations. What we can say: the methodology works. WITIA is its productisation.
+              </p>
+              <div style={{ marginTop: '24px' }}>
+                <a href="https://www.cai.cam.ac.uk/news/following-north-star" target="_blank" rel="noopener noreferrer" className="cta-link" style={{ fontSize: '11px' }}>
+                  READ THE CAMBRIDGE FEATURE -&gt;
+                </a>
+              </div>
             </div>
           </div>
         </section>
@@ -340,30 +360,48 @@ export default function Home() {
                 </p>
               ) : (
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {[
-                    { placeholder: 'Name', type: 'text' },
-                    { placeholder: 'Email', type: 'email' },
-                  ].map(({ placeholder, type }) => (
-                    <input
-                      key={placeholder}
-                      type={type}
-                      placeholder={placeholder}
-                      required
-                      style={inputStyle}
-                      onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                      onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
-                    />
-                  ))}
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    style={inputStyle}
+                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
+                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    style={inputStyle}
+                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
+                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
+                  />
                   <textarea
                     placeholder="Message"
                     rows={4}
                     required
+                    value={formData.message}
+                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     style={{ ...inputStyle, resize: 'vertical', marginTop: '8px' }}
                     onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
                     onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
                   />
-                  <button type="submit" className="cta-link" style={{ marginTop: '20px', fontSize: '11px', letterSpacing: '0.1em' }}>
-                    SEND MESSAGE -&gt;
+                  {submitError && (
+                    <p style={{ fontSize: '12px', color: '#c00', fontFamily: "'Inter', sans-serif", marginTop: '8px' }}>
+                      {submitError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="cta-link"
+                    style={{ marginTop: '20px', fontSize: '11px', letterSpacing: '0.1em', opacity: submitting ? 0.5 : 1 }}
+                  >
+                    {submitting ? 'SENDING...' : 'SEND MESSAGE ->'}
                   </button>
                 </form>
               )}
@@ -378,9 +416,12 @@ export default function Home() {
 
         {/* FOOTER */}
         <footer style={{ borderTop: '1px solid #E0E0E0', paddingTop: '24px', paddingBottom: '24px' }}>
-          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif" }}>© 2026 WITIA LTD</span>
-            <span style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif" }}>witia.ai</span>
+          <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <span style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif" }}>© 2026 WITIA LTD. All rights reserved.</span>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+              <a href="https://www.linkedin.com/in/jordanu/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif", textDecoration: 'none', letterSpacing: '0.08em' }}>LINKEDIN</a>
+              <a href="mailto:team@witia.ai" style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif", textDecoration: 'none', letterSpacing: '0.08em' }}>team@witia.ai</a>
+            </div>
           </div>
         </footer>
       </main>
