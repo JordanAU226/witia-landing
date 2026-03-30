@@ -8,6 +8,7 @@ export interface NodeObject {
   core: THREE.Mesh
   highlight: THREE.Mesh
   haloMat: THREE.MeshBasicMaterial
+  tier: 1 | 2
 }
 
 export function buildNodes(nodes: NodeDef[], R: number): NodeObject[] {
@@ -24,9 +25,9 @@ export function buildNodes(nodes: NodeDef[], R: number): NodeObject[] {
     // Halo
     const haloGeom = new THREE.SphereGeometry(haloR, 16, 16)
     const haloMat = new THREE.MeshBasicMaterial({
-      color: '#6e98e3',
+      color: '#7ea0d4',
       transparent: true,
-      opacity: 0.10,
+      opacity: isTier1 ? 0.09 : 0.065,
       depthWrite: false,
     })
     const halo = new THREE.Mesh(haloGeom, haloMat)
@@ -35,7 +36,7 @@ export function buildNodes(nodes: NodeDef[], R: number): NodeObject[] {
     // Core
     const coreGeom = new THREE.SphereGeometry(coreR, 16, 16)
     const coreMat = new THREE.MeshBasicMaterial({
-      color: '#26497a',
+      color: '#1e3d6b',   // darker, more precise
       opacity: 1.0,
       depthWrite: true,
     })
@@ -55,7 +56,7 @@ export function buildNodes(nodes: NodeDef[], R: number): NodeObject[] {
     const offset = pos.clone().normalize().multiplyScalar(coreR * 0.6)
     highlight.position.copy(pos).add(offset)
 
-    result.push({ halo, core, highlight, haloMat })
+    result.push({ halo, core, highlight, haloMat, tier: node.tier })
   }
 
   return result

@@ -56,8 +56,11 @@ export default function PremiumGlobe({
 
     // ── Globe group ──────────────────────────────────────────────────────────
     const group = new THREE.Group()
-    group.rotation.x = -12 * (Math.PI / 180)
-    group.rotation.y =  18 * (Math.PI / 180)
+    // Authored hero pose: Europe/Africa/Atlantic corridor prominent
+    // Shows London, Lagos, Brussels as primary focal cluster
+    // NY sweep visible, Africa landmass as geographic anchor
+    group.rotation.x = -8 * (Math.PI / 180)
+    group.rotation.y = -8 * (Math.PI / 180)
     scene.add(group)
 
     // ── Lighting (scene-level, not rotating) ─────────────────────────────────
@@ -69,9 +72,10 @@ export default function PremiumGlobe({
     disposables.push(sphereGeom)
     const sphereMat = new THREE.MeshPhysicalMaterial({
       color: PALETTE.oceanBase,
-      roughness: 0.88,
-      metalness: 0.01,
-      clearcoat: 0.08,
+      roughness: 0.91,     // more matte — ceramic/mineral feel
+      metalness: 0.0,      // zero metal
+      clearcoat: 0.05,     // barely there clearcoat
+      clearcoatRoughness: 0.92,
     })
     disposables.push(sphereMat)
     const sphere = new THREE.Mesh(sphereGeom, sphereMat)
@@ -178,33 +182,38 @@ export default function PremiumGlobe({
         const cycle = 4200 + idx * 600
         const t = ((Date.now() + route.offset) % cycle) / cycle
 
-        // Line fade in / hold / fade out
+        // Selective legibility: routes fade in/hold/fade out
+        // Base opacity raised — routes are now selectively legible, not globally faint
         const lineAlpha =
-          t < 0.12 ? t / 0.12
-          : t > 0.82 ? (1 - t) / 0.18
+          t < 0.10 ? t / 0.10
+          : t > 0.85 ? (1 - t) / 0.15
           : 1
-        ;(route.tube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * 0.22
+        ;(route.tube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * 0.32
+        ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * 0.09
 
-        // Pulse eased travel
-        const pulseT = Math.pow(t, 0.85)
+        // Pulse eased travel — slight ease-in
+        const pulseT = Math.pow(t, 0.88)
         const ptIdx = Math.min(
           Math.floor(pulseT * route.points.length),
           route.points.length - 1,
         )
         route.pulse.position.copy(route.points[ptIdx])
-        route.pulseMat.opacity = lineAlpha * 0.85
+        route.pulseMat.opacity = lineAlpha * 0.90
 
-        // Pulse brightens near arrival
-        const nearEnd = 1 - Math.abs(t - 0.75) / 0.25
+        // Pulse brightens near arrival (causal feel)
+        const nearEnd = Math.max(0, 1 - Math.abs(t - 0.78) / 0.22)
         if (nearEnd > 0) {
-          route.pulseMat.opacity = Math.min(0.95, route.pulseMat.opacity + nearEnd * 0.3)
+          route.pulseMat.opacity = Math.min(0.98, route.pulseMat.opacity + nearEnd * 0.35)
         }
       })
 
-      // ── Animate node halos (breathing) ─────────────────────────────────────
+      // ── Animate node halos (very subtle breathing) ──────────────────────────
       nodeObjects.forEach((node, idx) => {
-        const phase = (Date.now() * 0.0006 + idx * 0.8) % (Math.PI * 2)
-        node.haloMat.opacity = 0.08 + Math.sin(phase) * 0.025
+        const phase = (Date.now() * 0.00055 + idx * 0.9) % (Math.PI * 2)
+        // Tier 1 nodes breathe slightly more
+        const baseOpacity = node.tier === 1 ? 0.09 : 0.065
+        const amplitude = node.tier === 1 ? 0.022 : 0.016
+        node.haloMat.opacity = baseOpacity + Math.sin(phase) * amplitude
       })
 
       renderer.render(scene, camera)

@@ -5,31 +5,33 @@ export const GLOBE_TUNING = {
   borderOffset: 0.020,
   graticuleOffset: 0.004,
   atmosphere: {
-    innerRadius: 2.12,
-    outerRadius: 2.24,
-    innerPower: 4.0,
-    outerPower: 2.0,
-    innerIntensity: 0.14,
-    outerIntensity: 0.05,
+    innerRadius: 2.10,   // tighter inner shell
+    outerRadius: 2.28,   // broader outer halo
+    innerPower: 5.2,     // tighter fresnel — less visible front-on
+    outerPower: 1.8,     // broader, more diffuse outer halo
+    innerIntensity: 0.12,
+    outerIntensity: 0.038,
   },
   routes: {
-    tubeRadius: 0.004,
-    pulseRadius: 0.016,
+    tubeRadius: 0.0035,
+    pulseRadius: 0.014,
     minHeight: 0.10,
-    maxHeight: 0.30,
+    maxHeight: 0.32,
   },
 } as const
 
+// Tonal hierarchy: clearly separated values
+// Body (darkest) → Land (lighter) → Coastline → Border (softer) → Graticule (faintest)
 export const PALETTE = {
-  oceanBase: '#b7b1a8',
-  landFill: '#9e9a96',
-  coastline: '#5d5954',
-  borders: '#6f6a64',
-  graticule: '#c9c3ba',
-  nodeCore: '#26497a',
-  routeBody: '#8eaadb',
-  routePulse: '#5f89d7',
-  atmosphereRim: '#d8e3f2',
+  oceanBase: '#9c9690',    // darker base — more tonal separation from land
+  landFill: '#c2bdb7',     // noticeably lighter than body — key hierarchy fix
+  coastline: '#4a4541',    // strong, crisp geographic line
+  borders: '#7a7470',      // recessed, discoverable on inspection
+  graticule: '#d4cec8',    // very light, nearly ambient
+  nodeCore: '#1e3d6b',     // darker, more precise
+  routeBody: '#7ea0d4',    // slightly more visible routes
+  routePulse: '#4e7cc9',   // brighter pulse
+  atmosphereRim: '#c4d4ee', // cooler, less white
 } as const
 
 export interface NodeDef {
@@ -39,6 +41,8 @@ export interface NodeDef {
   tier: 1 | 2
 }
 
+// Authored initial pose: Europe/Africa/UK corridor prominent
+// Y rotation set so Atlantic faces viewer — shows London, Lagos, Brussels, NY sweep
 export const NODES: NodeDef[] = [
   { id: 'london',     lat: 51.5,  lng: -0.1,   tier: 1 },
   { id: 'birmingham', lat: 52.5,  lng: -1.9,   tier: 2 },
@@ -51,15 +55,15 @@ export const NODES: NodeDef[] = [
   { id: 'singapore',  lat: 1.3,   lng: 103.8,  tier: 1 },
 ]
 
+// Selective routes: 4-5 key routes visible in default pose, not all 10
+// Priority: intercontinental intelligence exchange arcs
 export const ROUTES: string[][] = [
-  ['london', 'newyork'],
-  ['london', 'lagos'],
-  ['london', 'brussels'],
-  ['newyork', 'washington'],
-  ['newyork', 'singapore'],
-  ['lagos', 'nairobi'],
-  ['nairobi', 'singapore'],
-  ['brussels', 'nairobi'],
-  ['london', 'birmingham'],
-  ['newyork', 'phoenix'],
+  ['london', 'newyork'],       // main transatlantic — hero arc
+  ['london', 'lagos'],         // UK-Africa — WITIA origin story
+  ['london', 'brussels'],      // European institutional
+  ['newyork', 'singapore'],    // global east-west
+  ['lagos', 'nairobi'],        // African corridor
+  ['brussels', 'nairobi'],     // EU-Africa intelligence
+  ['london', 'birmingham'],    // UK pilot
+  ['newyork', 'phoenix'],      // US expansion
 ]

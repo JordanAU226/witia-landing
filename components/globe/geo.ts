@@ -117,8 +117,11 @@ export function buildCoastlines(world: Topology, R: number): THREE.LineSegments 
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
+  // Coastlines: strongest geographic line — leads the hierarchy
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.coastline,
+    transparent: true,
+    opacity: 0.58,
     linewidth: 1,
   })
 
@@ -148,11 +151,12 @@ export function buildBorders(world: Topology, R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
+  // Borders: recessed — discoverable on inspection, never leads
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.borders,
     linewidth: 1,
     transparent: true,
-    opacity: 0.65,
+    opacity: 0.24,
   })
 
   return new THREE.LineSegments(geometry, material)
@@ -188,11 +192,12 @@ export function buildGraticule(R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
+  // Graticule: softest layer — felt before it's read
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.graticule,
     linewidth: 1,
     transparent: true,
-    opacity: 0.55,
+    opacity: 0.10,
   })
 
   return new THREE.LineSegments(geometry, material)
