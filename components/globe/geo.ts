@@ -23,9 +23,11 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
   )
 
   const meshes: THREE.Mesh[] = []
+  // Land: slightly more responsive to light than body (printed/etched feel)
   const material = new THREE.MeshPhongMaterial({
     color: PALETTE.landFill,
-    shininess: 4,
+    shininess: 6,    // slightly more light response than body
+    specular: new THREE.Color(0x1a1512),
     side: THREE.FrontSide,
   })
 
@@ -117,11 +119,11 @@ export function buildCoastlines(world: Topology, R: number): THREE.LineSegments 
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Coastlines: strongest geographic line — leads the hierarchy
+  // Coastlines: clearest line system — increased ~12% from previous
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.coastline,
     transparent: true,
-    opacity: 0.58,
+    opacity: 0.65,
     linewidth: 1,
   })
 
@@ -151,12 +153,12 @@ export function buildBorders(world: Topology, R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Borders: recessed — discoverable on inspection, never leads
+  // Borders: behind coastlines — reduced ~15% from previous
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.borders,
     linewidth: 1,
     transparent: true,
-    opacity: 0.24,
+    opacity: 0.18,
   })
 
   return new THREE.LineSegments(geometry, material)
@@ -192,12 +194,12 @@ export function buildGraticule(R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Graticule: softest layer — felt before it's read
+  // Graticule: texture and precision — reduced another 20%, barely perceptible
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.graticule,
     linewidth: 1,
     transparent: true,
-    opacity: 0.10,
+    opacity: 0.07,
   })
 
   return new THREE.LineSegments(geometry, material)
