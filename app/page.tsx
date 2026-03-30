@@ -202,7 +202,7 @@ export default function Home() {
                   fontFamily: "'Inter', sans-serif",
                   maxWidth: '420px',
                 }}>
-                  Built to make honesty the rational choice — for every contractor, in every jurisdiction.
+                  Built to make honesty the rational choice - for every contractor, in every jurisdiction.
                 </p>
                 <p style={{
                   marginTop: '12px',
