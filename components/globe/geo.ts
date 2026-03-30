@@ -119,11 +119,11 @@ export function buildCoastlines(world: Topology, R: number): THREE.LineSegments 
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Coastlines: clearest line system — increased ~12% from previous
+  // Coastlines: eye reads these first — raised another 12%
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.coastline,
     transparent: true,
-    opacity: 0.65,
+    opacity: 0.72,
     linewidth: 1,
   })
 
@@ -153,12 +153,12 @@ export function buildBorders(world: Topology, R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Borders: behind coastlines — reduced ~15% from previous
+  // Borders: discoverable on inspection, never leads — reduced another 12%
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.borders,
     linewidth: 1,
     transparent: true,
-    opacity: 0.18,
+    opacity: 0.14,
   })
 
   return new THREE.LineSegments(geometry, material)
@@ -194,12 +194,12 @@ export function buildGraticule(R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Graticule: texture and precision — reduced another 20%, barely perceptible
+  // Graticule: precision texture only — reduced another 22%
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.graticule,
     linewidth: 1,
     transparent: true,
-    opacity: 0.07,
+    opacity: 0.048,
   })
 
   return new THREE.LineSegments(geometry, material)

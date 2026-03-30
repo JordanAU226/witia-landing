@@ -5,12 +5,12 @@ export const GLOBE_TUNING = {
   borderOffset: 0.018,
   graticuleOffset: 0.003,
   atmosphere: {
-    innerRadius: 2.108,  // tight — sits close to limb
-    outerRadius: 2.30,   // broad falloff
-    innerPower: 6.0,     // very tight fresnel — nearly invisible face-on
-    outerPower: 1.6,     // very broad, airy outer halo
-    innerIntensity: 0.13,
-    outerIntensity: 0.028, // reduced 25% from previous
+    innerRadius: 2.105,  // tighter still — closer to limb
+    outerRadius: 2.26,   // reduced outer radius — less broad wash
+    innerPower: 6.8,     // even tighter fresnel — really only at edge
+    outerPower: 1.4,     // broad falloff but weaker
+    innerIntensity: 0.11,
+    outerIntensity: 0.020, // significantly reduced outer wash
   },
   routes: {
     tubeRadius: 0.0030,  // ~1.5px at hero scale
@@ -21,32 +21,34 @@ export const GLOBE_TUNING = {
   // Constrained hero orbit — not full 360°
   // Globe dwells on Africa/Europe, sweeps toward Americas, returns
   motion: {
-    // Default pose: ~20°E, 10°N — Africa/Europe/Middle East corridor
+    // Default pose: Africa/Europe/Middle East canonical frame
     defaultRotX: -10 * (Math.PI / 180),
     defaultRotY: -20 * (Math.PI / 180),
-    // Constrained sweep: only 40° total yaw from default
-    sweepAmplitude: 20 * (Math.PI / 180), // ±20° from default
-    sweepPeriod: 45000, // 45s full cycle — slow, composed
-    idleDrift: 0.00022, // barely perceptible
-    // Pointer response
-    pointerYawInfluence: 0.028,
-    pointerPitchInfluence: 0.014,
-    returnSpeed: 0.035,
+    // Constrained sweep: ±18° — very small range, strong dwell
+    sweepAmplitude: 18 * (Math.PI / 180),
+    sweepPeriod: 62000,  // 62s cycle — viewer feels authorship, not animation
+    // Asymmetric dwell: globe spends 65% of time near default pose
+    dwellBias: 0.65,
+    idleDrift: 0.00015,  // barely perceptible base drift
+    // Pointer: museum object — 2-4° yaw, 1-2° pitch
+    pointerYawInfluence: 0.022,
+    pointerPitchInfluence: 0.010,
+    returnSpeed: 0.028,   // graceful return over ~700ms
   },
 } as const
 
-// Smoked stone / ceramic palette — warmer, slightly lighter than previous
+// Raised body value ~5% — less "dense dark mass", still stone not gray
 export const PALETTE = {
-  oceanBase: '#524d48',    // smoked stone — warm charcoal, NOT black
-  landFill: '#6e665e',     // clearly lighter — etched/printed feel
-  coastline: '#867d72',    // controlled through opacity
+  oceanBase: '#5e5850',    // raised ~5% from #524d48 — warm stone, breathes
+  landFill: '#786f66',     // land clearly lighter, more responsive to key light
+  coastline: '#7a7068',    // coastline leads — readable first
   borders: '#7b736a',      // behind coastlines
-  graticule: '#8e857b',    // texture and precision, not graphic device
+  graticule: '#8e857b',    // texture only
   nodeCore: '#284a78',     // institutional slate blue
   nodeHighlight: '#89a6d3',
-  routeBody: '#7f98c2',    // desaturated slate blue
+  routeBody: '#8aa0c8',    // slightly raised route body for spatial identity
   routePulse: '#6a8fd0',
-  atmosphereRim: '#dde4ef', // cool paper-blue, not white
+  atmosphereRim: '#ced9ed', // cooler, less white
 } as const
 
 export interface NodeDef {

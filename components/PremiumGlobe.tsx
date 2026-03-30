@@ -182,76 +182,89 @@ export default function PremiumGlobe({
 
       const now = Date.now()
 
-      // ── Constrained hero orbit ──────────────────────────────────────────────
-      // Sweeps ±20° around the default Africa/Europe pose — NOT full 360°
-      // Uses a slow sinusoidal sweep with asymmetric dwell on best face
+      // ── Constrained curated drift ───────────────────────────────────────────
+      // Long 62s cycle, asymmetric: ~65% dwell on Africa/Europe best face
+      // Uses a biased sine so it spends more time near zero (default pose)
       const { defaultRotY, defaultRotX, sweepAmplitude, sweepPeriod } = GLOBE_TUNING.motion
       const sweepT = (now % sweepPeriod) / sweepPeriod
-      // Asymmetric: spend 60% of time near default (Africa/Europe), 25% near Americas, 15% returning
-      const sweepAngle = sweepAmplitude * Math.sin(sweepT * Math.PI * 2) * 0.7
-      // Pitch: very slow 1-2° breathing
-      const pitchBreath = (1.5 * Math.PI / 180) * Math.sin(now * 0.00008)
+      // Biased sweep: cube the sine to create longer dwell at zero crossing
+      const rawSin = Math.sin(sweepT * Math.PI * 2)
+      const biasedSweep = Math.sign(rawSin) * Math.pow(Math.abs(rawSin), 2.2)
+      const sweepAngle = sweepAmplitude * biasedSweep * 0.65
+      // Pitch: 1-2° max, very slow
+      const pitchBreath = (1.2 * Math.PI / 180) * Math.sin(now * 0.000065)
 
       if (interactionCtrl) {
         interactionCtrl.update()
       } else {
-        group.rotation.y += (defaultRotY + sweepAngle - group.rotation.y) * 0.001
-        group.rotation.x += (defaultRotX + pitchBreath - group.rotation.x) * 0.001
+        group.rotation.y += (defaultRotY + sweepAngle - group.rotation.y) * 0.0008
+        group.rotation.x += (defaultRotX + pitchBreath - group.rotation.x) * 0.0008
       }
 
       // ── Route animation: 1 hero arc + 1 supporting arc max ──────────────────
       // Routes[0] = transatlantic (hero), Routes[1] = London-Lagos (supporting)
       // Remaining routes shown only as static lines at low opacity
       routes.forEach((route, idx) => {
-        const isHero = idx === 0      // transatlantic
-        const isSupport = idx === 1   // London-Lagos
+        const isHero = idx === 0      // transatlantic — the ONE route that carries meaning
+        const isSupport = idx === 1   // London-Lagos — quieter second arc
 
-        const cycleMs = isHero ? 5500 : 6200 + idx * 700
+        // Hero arc: raised ~10% for spatial identity vs sphere body
+        // Support arc: lower, never competes with hero
+        // Others: invisible pulse, very low line
+        const cycleMs = isHero ? 5800 : 6800 + idx * 500
         const t = ((now + route.offset) % cycleMs) / cycleMs
 
-        // Hero arc: more visible; support arc: quieter; rest: static low opacity
-        const maxOpacity = isHero ? 0.22 : isSupport ? 0.14 : 0.06
-        const lineAlpha = t < 0.10 ? t / 0.10 : t > 0.86 ? (1 - t) / 0.14 : 1
+        const maxOpacity = isHero ? 0.26 : isSupport ? 0.12 : 0.05
+        const lineAlpha = t < 0.08 ? t / 0.08 : t > 0.88 ? (1 - t) / 0.12 : 1
         ;(route.tube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * maxOpacity
-        ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * (isHero ? 0.06 : 0.03)
+        // Glow: hero gets a restrained glow for spatial separation, support minimal
+        ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * (isHero ? 0.07 : 0.02)
 
-        // Only hero and support arcs get a pulse
+        // SINGLE pulse: only the hero arc has a strong pulse
+        // Support arc gets a very quiet one — never reads as a second bright accent
         if (isHero || isSupport) {
-          const pulseT = Math.pow(t, 0.90)
+          const pulseT = Math.pow(t, 0.92) // smooth ease
           const ptIdx = Math.min(Math.floor(pulseT * route.points.length), route.points.length - 1)
           route.pulse.position.copy(route.points[ptIdx])
 
-          // Hero pulse: full brightness; support: quieter
-          const baseAlpha = isHero ? 0.88 : 0.45
-          route.pulseMat.opacity = lineAlpha * baseAlpha
+          const basePulse = isHero ? 0.92 : 0.28 // support pulse barely visible
+          route.pulseMat.opacity = lineAlpha * basePulse
 
-          // Pulse blooms briefly at arrival
-          const nearEnd = Math.max(0, 1 - Math.abs(t - 0.80) / 0.20)
+          // Arrival bloom — brief, one moment only
+          const nearEnd = Math.max(0, 1 - Math.abs(t - 0.82) / 0.18)
           if (nearEnd > 0) {
-            route.pulseMat.opacity = Math.min(0.97, route.pulseMat.opacity + nearEnd * 0.32)
-            // Node arrival bloom: find nearest node and pulse its halo
-            if (nearEnd > 0.7 && isHero) {
-              const arrivalNodeIdx = nodeObjects.findIndex(n => n.tier === 1)
-              if (arrivalNodeIdx >= 0) {
-                nodeObjects[arrivalNodeIdx].haloMat.opacity = Math.min(
-                  0.22, nodeObjects[arrivalNodeIdx].haloMat.opacity + nearEnd * 0.08
-                )
+            route.pulseMat.opacity = Math.min(0.97, route.pulseMat.opacity + nearEnd * 0.30)
+            // Destination node responds to arrival — London node (idx 0 in NODES)
+            if (nearEnd > 0.6 && isHero) {
+              const londonNode = nodeObjects.find(n => n.tier === 1)
+              if (londonNode) {
+                londonNode.haloMat.opacity = Math.min(0.20, londonNode.haloMat.opacity + nearEnd * 0.07)
               }
             }
           }
         } else {
-          // Non-active routes: hidden pulse
           route.pulseMat.opacity = 0
         }
       })
 
-      // ── Node halos: very subtle breathing, tier-aware ──────────────────────
+      // ── Node halos: subtle breathing + limb suppression ────────────────────
       nodeObjects.forEach((node, idx) => {
         const phase = (now * 0.00052 + idx * 1.1) % (Math.PI * 2)
         const base = node.tier === 1 ? 0.09 : node.tier === 2 ? 0.06 : 0.04
-        const amp  = node.tier === 1 ? 0.018 : node.tier === 2 ? 0.012 : 0.008
-        // Clamp nodes near limb — prevent edge pinprick artifacts
-        node.haloMat.opacity = base + Math.sin(phase) * amp
+        const amp  = node.tier === 1 ? 0.016 : node.tier === 2 ? 0.010 : 0.007
+        let opacity = base + Math.sin(phase) * amp
+
+        // Limb suppression: project node pos through camera to detect edge proximity
+        // If node is near the sphere silhouette, reduce halo to keep edge composed
+        const nodeInView = node.pos.clone().applyQuaternion(group.quaternion)
+        const edgeDot = nodeInView.clone().normalize().dot(new THREE.Vector3(0, 0, 1))
+        // edgeDot near 0 = at limb, near 1 = facing camera
+        if (edgeDot < 0.18) {
+          const limbFade = Math.max(0, edgeDot / 0.18)
+          opacity *= limbFade * 0.5
+        }
+
+        node.haloMat.opacity = Math.max(0, opacity)
       })
 
       renderer.render(scene, camera)
