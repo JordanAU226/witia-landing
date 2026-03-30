@@ -352,7 +352,37 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="reveal" ref={(el) => addRevealRef(el, 10)} style={{ marginTop: '40px', maxWidth: '480px' }}>
+            {/* Two-track engagement */}
+            <div className="reveal" ref={(el) => addRevealRef(el, 10)} style={{ marginTop: '48px', maxWidth: '560px' }}>
+
+              {/* Track 1: Book a call */}
+              <div style={{ paddingBottom: '32px', borderBottom: '1px solid #E0E0E0' }}>
+                <p style={{ fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '12px' }}>
+                  FASTEST PATH
+                </p>
+                <p style={{ fontSize: '14px', color: '#000', fontFamily: 'Georgia, serif', fontWeight: 400, marginBottom: '16px', lineHeight: 1.4 }}>
+                  Book a 30-minute intro call.
+                </p>
+                <p style={{ fontSize: '13px', color: '#555', fontFamily: "'Inter', sans-serif", lineHeight: 1.6, marginBottom: '20px' }}>
+                  A short conversation to understand your procurement context and whether WITIA is the right fit.
+                </p>
+                <a
+                  href="https://cal.eu/jordanu"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cta-link"
+                  style={{ fontSize: '11px' }}
+                >
+                  SCHEDULE A CALL -&gt;
+                </a>
+              </div>
+
+              {/* Track 2: Send a message */}
+              <div style={{ paddingTop: '32px' }}>
+                <p style={{ fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '12px' }}>
+                  OR SEND A MESSAGE
+                </p>
+
               {submitted ? (
                 <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '15px', color: '#000', lineHeight: 1.7 }}>
                   Message received. We&apos;ll be in touch.
@@ -404,11 +434,12 @@ export default function Home() {
                   </button>
                 </form>
               )}
-              <p style={{ marginTop: '32px' }}>
-                <a href="mailto:team@witia.ai" style={{ fontSize: '13px', color: '#000', textDecoration: 'underline', fontFamily: "'Inter', sans-serif" }}>
-                  team@witia.ai
+              <p style={{ marginTop: '24px' }}>
+                <a href="mailto:team@witia.ai" style={{ fontSize: '12px', color: '#aaa', fontFamily: "'Inter', sans-serif", textDecoration: 'none' }}>
+                  or email team@witia.ai
                 </a>
               </p>
+              </div>
             </div>
           </div>
         </section>
