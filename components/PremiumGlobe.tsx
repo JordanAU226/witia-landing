@@ -31,11 +31,16 @@ export default function PremiumGlobe({
     if (!mount) return
 
     // ── Detect environment ──────────────────────────────────────────────────
-    const isMobile = window.innerWidth <= 768
+    const isMobile = window.innerWidth <= 600
+    const isTablet = window.innerWidth > 600 && window.innerWidth <= 1024
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    // On mobile: use a smaller rendered size for perf
-    const renderSize = isMobile ? Math.min(300, mount.clientWidth) : size
+    // Progressive fidelity: desktop full, tablet reduced, mobile minimal
+    const renderSize = isMobile ? 280 : isTablet ? 380 : size
+    // Sphere segments by device tier
+    const sphereSegments = isMobile ? 32 : isTablet ? 48 : 64
+    // Max routes to animate by device tier
+    const maxRoutes = isMobile ? 3 : isTablet ? 5 : Infinity
 
     // ── Dispose registry ────────────────────────────────────────────────────
     const disposables: { dispose(): void }[] = []
@@ -48,7 +53,8 @@ export default function PremiumGlobe({
       alpha: true,
     })
     renderer.setPixelRatio(pixelRatio)
-    renderer.setSize(isMobile ? renderSize : mount.clientWidth, isMobile ? renderSize : mount.clientHeight)
+    const isSmallDevice = isMobile || isTablet
+    renderer.setSize(isSmallDevice ? renderSize : mount.clientWidth, isSmallDevice ? renderSize : mount.clientHeight)
     renderer.setClearColor(0x000000, 0)
     mount.appendChild(renderer.domElement)
 
@@ -77,7 +83,7 @@ export default function PremiumGlobe({
     lights.forEach(l => scene.add(l))
 
     // ── Base sphere ──────────────────────────────────────────────────────────
-    const sphereGeom = new THREE.SphereGeometry(GLOBE_TUNING.radius, 64, 64)
+    const sphereGeom = new THREE.SphereGeometry(GLOBE_TUNING.radius, sphereSegments, sphereSegments)
     disposables.push(sphereGeom)
     const sphereMat = new THREE.MeshPhysicalMaterial({
       color: PALETTE.oceanBase,
@@ -215,12 +221,21 @@ export default function PremiumGlobe({
         group.rotation.x += (defaultRotX + pitchBreath - group.rotation.x) * 0.0008
       }
 
-      // ── Route animation: 1 hero arc + 1 supporting arc max ──────────────────
+      // ── Route animation: progressive fidelity by device tier ────────────────
       // Routes[0] = transatlantic (hero), Routes[1] = London-Lagos (supporting)
       // Remaining routes shown only as static lines at low opacity
+      // maxRoutes caps the number of animated routes (mobile=3, tablet=5, desktop=all)
       routes.forEach((route, idx) => {
         const isHero = idx === 0      // transatlantic — the ONE route that carries meaning
         const isSupport = idx === 1   // London-Lagos — quieter second arc
+
+        // Beyond device tier limit: hide entirely
+        if (idx >= maxRoutes) {
+          ;(route.tube.material as THREE.MeshBasicMaterial).opacity = 0
+          ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = 0
+          route.pulseMat.opacity = 0
+          return
+        }
 
         // Hero arc: raised ~10% for spatial identity vs sphere body
         // Support arc: lower, never competes with hero
@@ -289,8 +304,9 @@ export default function PremiumGlobe({
     // ── Responsive resize ────────────────────────────────────────────────────
     const resizeObserver = new ResizeObserver(() => {
       if (!mount) return
-      const isMobileNow = window.innerWidth <= 768
-      const w = isMobileNow ? Math.min(300, mount.clientWidth) : mount.clientWidth
+      const isMobileNow = window.innerWidth <= 600
+      const isTabletNow = window.innerWidth > 600 && window.innerWidth <= 1024
+      const w = isMobileNow ? 280 : isTabletNow ? 380 : mount.clientWidth
       const h = w // square aspect
       camera.aspect = 1
       camera.updateProjectionMatrix()

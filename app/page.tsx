@@ -65,7 +65,7 @@ export default function Home() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     border: 'none',
-    borderBottom: '1px solid #E0E0E0',
+    borderBottom: '1px solid #DDD8D2',
     padding: '12px 0',
     background: 'transparent',
     fontSize: '13px',
@@ -78,7 +78,7 @@ export default function Home() {
     fontSize: '9px',
     letterSpacing: '0.12em',
     textTransform: 'uppercase' as const,
-    color: '#888',
+    color: '#7a7570',
     fontWeight: 500,
     paddingTop: '2px',
     fontFamily: "'Inter', sans-serif",
@@ -110,18 +110,26 @@ export default function Home() {
           padding: 0;
           display: inline;
         }
+        .cta-link:hover {
+          opacity: 0.6;
+          transition: opacity 0.2s ease;
+        }
+        .cta-link:focus-visible {
+          outline: 1px solid #000;
+          outline-offset: 3px;
+        }
         .row-grid {
           padding-top: 20px;
           padding-bottom: 20px;
-          border-top: 1px solid #E0E0E0;
+          border-top: 1px solid #DDD8D2;
           display: grid;
-          grid-template-columns: 120px 1fr;
+          grid-template-columns: 140px 1fr;
           gap: 24px;
           align-items: start;
         }
         .hero-grid {
           display: grid;
-          grid-template-columns: 0.84fr 1.16fr;
+          grid-template-columns: 0.92fr 1.08fr;
           gap: 48px;
           align-items: center;
         }
@@ -130,16 +138,43 @@ export default function Home() {
           justify-content: center;
           align-items: center;
         }
+        .hero-cta-mobile { display: none; }
+        .hero-cta-desktop { display: block; }
+        /* Tablet: 769-1024px — globe present but smaller */
+        @media (max-width: 1024px) and (min-width: 769px) {
+          .hero-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+          }
+        }
+        /* Mobile: stack, headline first, globe below, CTA last */
         @media (max-width: 768px) {
           .hero-grid {
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 0;
           }
+          .hero-text-block {
+            order: 1;
+          }
           .globe-container {
+            order: 2;
             display: flex;
             justify-content: center;
-            margin-top: 32px;
+            margin-top: 40px;
+            margin-bottom: 0;
             overflow: hidden;
+          }
+          .hero-cta-block {
+            order: 3;
+          }
+          .hero-cta-mobile {
+            display: block;
+            margin-top: 28px;
+            padding-bottom: 16px;
+          }
+          .hero-cta-desktop {
+            display: none;
           }
           .hero-section {
             padding-top: 64px;
@@ -171,7 +206,7 @@ export default function Home() {
       {/* NAV */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: '#fff', borderBottom: '1px solid #E0E0E0',
+        background: '#fefefe', borderBottom: '1px solid #DDD8D2',
         height: '52px', display: 'flex', alignItems: 'center',
       }}>
         <div className="container" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -182,15 +217,15 @@ export default function Home() {
 
       <main>
         {/* HERO */}
-        <section className="hero-section" style={{ paddingTop: '80px', paddingBottom: '60px', overflow: 'hidden' }}>
+        <section className="hero-section" style={{ paddingTop: 'clamp(80px, 8vw, 104px)', paddingBottom: 'clamp(60px, 6vw, 80px)', overflow: 'hidden' }}>
           <div className="container">
             <div className="hero-grid">
               {/* Left: Text */}
-              <div className="reveal" ref={(el) => addRevealRef(el, 0)}>
+              <div className="reveal hero-text-block" ref={(el) => addRevealRef(el, 0)}>
                 <h1 className="serif" style={{
-                  fontSize: 'clamp(30px, 4.5vw, 52px)',
+                  fontSize: 'clamp(30px, 4.5vw, 56px)',
                   fontWeight: 400,
-                  lineHeight: 1.08,
+                  lineHeight: 1.06,
                   color: '#000',
                   letterSpacing: '-0.02em',
                 }}>
@@ -198,8 +233,8 @@ export default function Home() {
                 </h1>
                 <p style={{
                   marginTop: '24px',
-                  fontSize: 'clamp(13px, 1.4vw, 14px)',
-                  color: '#555',
+                  fontSize: 'clamp(13px, 1.4vw, 15px)',
+                  color: '#444',
                   lineHeight: 1.7,
                   fontFamily: "'Inter', sans-serif",
                   maxWidth: '420px',
@@ -208,25 +243,31 @@ export default function Home() {
                 </p>
                 <p style={{
                   marginTop: '12px',
-                  fontSize: '12px',
-                  color: '#888',
+                  fontSize: '12.5px',
+                  color: '#777',
                   lineHeight: 1.6,
                   fontFamily: "'Inter', sans-serif",
                 }}>
                   Built by Award Winning Cambridge Alum. Backed by Emergent Ventures and Prometheus X Talent.
                 </p>
-                <div style={{ marginTop: '32px', display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* CTA visible on desktop, hidden on mobile */}
+                <div className="hero-cta-desktop" style={{ marginTop: '32px' }}>
                   <a href="#contact" className="cta-link" style={{ fontSize: '11px' }}>REQUEST A PILOT -&gt;</a>
                 </div>
               </div>
 
-              {/* Globe: responsive size — 520px desktop, 300px mobile */}
+              {/* Globe */}
               <div className="globe-container">
                 <PremiumGlobe
                   size={520}
                   quality="auto"
                   interactive={true}
                 />
+              </div>
+
+              {/* Mobile-only CTA below globe */}
+              <div className="hero-cta-mobile">
+                <a href="#contact" className="cta-link" style={{ fontSize: '11px' }}>REQUEST A PILOT -&gt;</a>
               </div>
             </div>
           </div>
@@ -297,7 +338,7 @@ export default function Home() {
                   tags: [],
                 },
               ].map((card, i) => (
-                <div key={i} className="reveal" ref={(el) => addRevealRef(el, 4 + i)} style={{ background: '#F5F5F5', borderRadius: '8px', padding: '24px' }}>
+                <div key={i} className="reveal" ref={(el) => addRevealRef(el, 4 + i)} style={{ background: '#F4F1EC', borderRadius: '6px', padding: '28px', border: '1px solid #E8E3DC' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#000', fontFamily: "'Inter', sans-serif", marginBottom: '10px' }}>{card.title}</h3>
                   <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>{card.body}</p>
                 </div>
@@ -311,7 +352,7 @@ export default function Home() {
         {/* CASE STUDY */}
         <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
           <div className="container">
-            <div className="reveal content-col" ref={(el) => addRevealRef(el, 7)}>
+            <div className="reveal content-col" ref={(el) => addRevealRef(el, 7)} style={{ maxWidth: '780px' }}>
               <p className="section-label">04 - PROOF OF CONCEPT</p>
               <h2 className="serif" style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
                 This has already changed government policy.
@@ -375,8 +416,8 @@ export default function Home() {
             <div className="reveal" ref={(el) => addRevealRef(el, 10)} style={{ marginTop: '48px', maxWidth: '560px' }}>
 
               {/* Track 1: Book a call */}
-              <div style={{ paddingBottom: '32px', borderBottom: '1px solid #E0E0E0' }}>
-                <p style={{ fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '12px' }}>
+              <div style={{ paddingBottom: '32px', borderBottom: '1px solid #DDD8D2' }}>
+                <p style={{ fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7a7570', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '12px' }}>
                   FASTEST PATH
                 </p>
                 <p style={{ fontSize: '14px', color: '#000', fontFamily: 'Georgia, serif', fontWeight: 400, marginBottom: '16px', lineHeight: 1.4 }}>
@@ -398,7 +439,7 @@ export default function Home() {
 
               {/* Track 2: Send a message */}
               <div style={{ paddingTop: '32px' }}>
-                <p style={{ fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '12px' }}>
+                <p style={{ fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7a7570', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '12px' }}>
                   OR SEND A MESSAGE
                 </p>
 
@@ -416,7 +457,7 @@ export default function Home() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     style={inputStyle}
                     onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
+                    onBlur={(e) => (e.target.style.borderBottomColor = '#DDD8D2')}
                   />
                   <input
                     type="email"
@@ -426,7 +467,7 @@ export default function Home() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     style={inputStyle}
                     onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
+                    onBlur={(e) => (e.target.style.borderBottomColor = '#DDD8D2')}
                   />
                   <textarea
                     placeholder="Message"
@@ -436,7 +477,7 @@ export default function Home() {
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     style={{ ...inputStyle, resize: 'vertical', marginTop: '8px' }}
                     onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#E0E0E0')}
+                    onBlur={(e) => (e.target.style.borderBottomColor = '#DDD8D2')}
                   />
                   {submitError && (
                     <p style={{ fontSize: '12px', color: '#c00', fontFamily: "'Inter', sans-serif", marginTop: '8px' }}>
@@ -464,12 +505,12 @@ export default function Home() {
         </section>
 
         {/* FOOTER */}
-        <footer style={{ borderTop: '1px solid #E0E0E0', paddingTop: '24px', paddingBottom: '24px' }}>
+        <footer style={{ borderTop: '1px solid #DDD8D2', paddingTop: '24px', paddingBottom: '24px' }}>
           <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <span style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif" }}>© 2026 WITIA LTD. All rights reserved.</span>
+            <span style={{ fontSize: '11px', color: '#7a7570', fontFamily: "'Inter', sans-serif" }}>© 2026 WITIA LTD. All rights reserved.</span>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-              <a href="https://www.linkedin.com/in/jordanu/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif", textDecoration: 'none', letterSpacing: '0.08em' }}>LINKEDIN</a>
-              <a href="mailto:team@witia.ai" style={{ fontSize: '11px', color: '#888', fontFamily: "'Inter', sans-serif", textDecoration: 'none', letterSpacing: '0.08em' }}>team@witia.ai</a>
+              <a href="https://www.linkedin.com/in/jordanu/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#7a7570', fontFamily: "'Inter', sans-serif", textDecoration: 'none', letterSpacing: '0.08em' }}>LINKEDIN</a>
+              <a href="mailto:team@witia.ai" style={{ fontSize: '11px', color: '#7a7570', fontFamily: "'Inter', sans-serif", textDecoration: 'none', letterSpacing: '0.08em' }}>team@witia.ai</a>
             </div>
           </div>
         </footer>
