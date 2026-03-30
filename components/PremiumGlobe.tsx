@@ -30,17 +30,25 @@ export default function PremiumGlobe({
     const mount = mountRef.current
     if (!mount) return
 
+    // ── Detect environment ──────────────────────────────────────────────────
+    const isMobile = window.innerWidth <= 768
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    // On mobile: use a smaller rendered size for perf
+    const renderSize = isMobile ? Math.min(300, mount.clientWidth) : size
+
     // ── Dispose registry ────────────────────────────────────────────────────
     const disposables: { dispose(): void }[] = []
 
     // ── Renderer ─────────────────────────────────────────────────────────────
-    const pixelRatio = Math.min(window.devicePixelRatio, 2)
+    // Mobile: cap pixel ratio at 1.5 for performance
+    const pixelRatio = isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
     })
     renderer.setPixelRatio(pixelRatio)
-    renderer.setSize(mount.clientWidth, mount.clientHeight)
+    renderer.setSize(isMobile ? renderSize : mount.clientWidth, isMobile ? renderSize : mount.clientHeight)
     renderer.setClearColor(0x000000, 0)
     mount.appendChild(renderer.domElement)
 
@@ -155,7 +163,9 @@ export default function PremiumGlobe({
         })
 
         // ── Interaction ─────────────────────────────────────────────────────
-        if (interactive) {
+        // Mobile: light touch drag only, no scroll conflict
+        // Reduced motion: no interaction at all — pure poster state
+        if (interactive && !prefersReducedMotion) {
           interactionCtrl = createInteractionController(group, renderer.domElement)
         }
       })
@@ -194,7 +204,11 @@ export default function PremiumGlobe({
       // Pitch: 1-2° max, very slow
       const pitchBreath = (1.2 * Math.PI / 180) * Math.sin(now * 0.000065)
 
-      if (interactionCtrl) {
+      if (prefersReducedMotion) {
+        // Static poster state — perfectly composed, no motion
+        group.rotation.y = defaultRotY
+        group.rotation.x = defaultRotX
+      } else if (interactionCtrl) {
         interactionCtrl.update()
       } else {
         group.rotation.y += (defaultRotY + sweepAngle - group.rotation.y) * 0.0008
@@ -275,9 +289,10 @@ export default function PremiumGlobe({
     // ── Responsive resize ────────────────────────────────────────────────────
     const resizeObserver = new ResizeObserver(() => {
       if (!mount) return
-      const w = mount.clientWidth
-      const h = mount.clientHeight
-      camera.aspect = w / h
+      const isMobileNow = window.innerWidth <= 768
+      const w = isMobileNow ? Math.min(300, mount.clientWidth) : mount.clientWidth
+      const h = w // square aspect
+      camera.aspect = 1
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
     })
@@ -302,9 +317,8 @@ export default function PremiumGlobe({
       ref={mountRef}
       className={className}
       style={{
-        width:  size,
-        height: size,
-        maxWidth: '100%',
+        width: '100%',
+        maxWidth: `${size}px`,
         aspectRatio: '1 / 1',
       }}
     />

@@ -133,15 +133,23 @@ export default function Home() {
         @media (max-width: 768px) {
           .hero-grid {
             grid-template-columns: 1fr;
+            gap: 0;
           }
           .globe-container {
-            display: none;
+            display: flex;
+            justify-content: center;
+            margin-top: 32px;
+            overflow: hidden;
+          }
+          .hero-section {
+            padding-top: 64px;
+            padding-bottom: 48px;
           }
         }
         @media (max-width: 600px) {
           .container {
-            padding-left: 20px;
-            padding-right: 20px;
+            padding-left: 24px;
+            padding-right: 24px;
           }
           .row-grid {
             grid-template-columns: 1fr;
@@ -149,6 +157,13 @@ export default function Home() {
           }
           .content-col {
             max-width: 100%;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .reveal {
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
           }
         }
       `}</style>
@@ -167,15 +182,15 @@ export default function Home() {
 
       <main>
         {/* HERO */}
-        <section style={{ paddingTop: '80px', paddingBottom: '60px', overflow: 'hidden' }}>
+        <section className="hero-section" style={{ paddingTop: '80px', paddingBottom: '60px', overflow: 'hidden' }}>
           <div className="container">
             <div className="hero-grid">
               {/* Left: Text */}
               <div className="reveal" ref={(el) => addRevealRef(el, 0)}>
                 <h1 className="serif" style={{
-                  fontSize: 'clamp(32px, 4.5vw, 52px)',
+                  fontSize: 'clamp(30px, 4.5vw, 52px)',
                   fontWeight: 400,
-                  lineHeight: 1.1,
+                  lineHeight: 1.08,
                   color: '#000',
                   letterSpacing: '-0.02em',
                 }}>
@@ -183,7 +198,7 @@ export default function Home() {
                 </h1>
                 <p style={{
                   marginTop: '24px',
-                  fontSize: '14px',
+                  fontSize: 'clamp(13px, 1.4vw, 14px)',
                   color: '#555',
                   lineHeight: 1.7,
                   fontFamily: "'Inter', sans-serif",
@@ -205,9 +220,13 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right: Globe */}
+              {/* Globe: responsive size — 520px desktop, 300px mobile */}
               <div className="globe-container">
-                <PremiumGlobe size={520} />
+                <PremiumGlobe
+                  size={520}
+                  quality="auto"
+                  interactive={true}
+                />
               </div>
             </div>
           </div>
