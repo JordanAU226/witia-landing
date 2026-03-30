@@ -202,7 +202,7 @@ export default function Home() {
                   fontFamily: "'Inter', sans-serif",
                   maxWidth: '420px',
                 }}>
-                  WITIA is an AI-powered trust layer for government procurement - combining fraud detection, vendor trust scoring, and a cross-jurisdiction intelligence exchange.
+                  Built to make honesty the rational choice — for every contractor, in every jurisdiction.
                 </p>
                 <p style={{
                   marginTop: '12px',
