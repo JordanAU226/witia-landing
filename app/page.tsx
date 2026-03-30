@@ -172,19 +172,6 @@ export default function Home() {
             <div className="hero-grid">
               {/* Left: Text */}
               <div className="reveal" ref={(el) => addRevealRef(el, 0)}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginBottom: '28px',
-                  fontSize: '11px',
-                  color: '#888',
-                  fontFamily: "'Inter', sans-serif",
-                  letterSpacing: '0.04em',
-                }}>
-                  <span style={{ color: '#aaa', fontSize: '8px' }}>●</span>
-                  Emergent Ventures · Prometheus X Talent
-                </div>
                 <h1 className="serif" style={{
                   fontSize: 'clamp(32px, 4.5vw, 52px)',
                   fontWeight: 400,
