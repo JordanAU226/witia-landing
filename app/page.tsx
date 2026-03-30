@@ -320,10 +320,13 @@ export default function Home() {
             <div className="reveal content-col" ref={(el) => addRevealRef(el, 8)}>
               <p className="section-label">05 - THE FOUNDER</p>
               <h2 className="serif" style={{ fontSize: 'clamp(28px, 4vw, 36px)', fontWeight: 400, lineHeight: 1.2, color: '#000' }}>
-                Built by experience.
+                Why WITIA exists.
               </h2>
               <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
                 Jordan Anthony Unokesan is a Multi Award-Winning Cambridge Graduate who achieved the highest attainment in the history of Land Economy (Law, Economics & Policy) at Gonville & Caius College - ranked 1st of 71 with a Starred First Class with Distinction. Founder of WITIA, Emergent Ventures Fellow, Prometheus X Fellow, and a top 10 future leader as recognised by the Powerlist Magazine.
+              </p>
+              <p style={{ marginTop: '16px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif", fontStyle: 'italic' }}>
+                For Jordan, this is not just a company. It is an obligation.
               </p>
               <div style={{ marginTop: '24px' }}>
                 <a href="https://www.linkedin.com/in/jordanu/" target="_blank" rel="noopener noreferrer" className="cta-link">
