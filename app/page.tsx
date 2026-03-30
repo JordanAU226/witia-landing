@@ -265,25 +265,22 @@ export default function Home() {
                 {
                   title: 'Fraud Detection',
                   body: 'AI-powered anomaly detection that cuts false positives from 90-95% to actionable, explainable alerts - with full audit trails for every finding.',
-                  tags: ['Ensemble ML', 'Explainable AI', 'Entity Resolution', 'Graph Analysis'],
+                  tags: [],
                 },
                 {
                   title: 'Vendor Trust Scoring',
                   body: 'A frontier innovation on traditional credit scoring - applying 8-dimensional trust analysis to public procurement. Top-quartile vendors earn expedited payments. Falling scores trigger audit probability increases. Fraud becomes irrational before it starts.',
-                  tags: ['8-Dimensional', 'Continuous Monitoring', 'Bayesian Scoring'],
+                  tags: [],
                 },
                 {
                   title: 'Fraud Intelligence Exchange',
                   body: 'Fraud caught in one jurisdiction trains the model protecting the next. The credit bureau insight applied to procurement: reputation made portable, enforcement made collective.',
-                  tags: ['Cross-jurisdiction', 'Network Effects', 'Privacy-preserving'],
+                  tags: [],
                 },
               ].map((card, i) => (
                 <div key={i} className="reveal" ref={(el) => addRevealRef(el, 4 + i)} style={{ background: '#F5F5F5', borderRadius: '8px', padding: '24px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#000', fontFamily: "'Inter', sans-serif", marginBottom: '10px' }}>{card.title}</h3>
                   <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>{card.body}</p>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
-                    {card.tags.map((tag) => (<span key={tag} style={tagPill}>{tag}</span>))}
-                  </div>
                 </div>
               ))}
             </div>
