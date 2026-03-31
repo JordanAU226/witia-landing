@@ -18,6 +18,22 @@ function removeDuplicateClosingPoint(ring: LonLat[]): LonLat[] {
   return ring
 }
 
+// Unwrap ring to prevent antimeridian seam issues
+// Ensures consecutive longitudes never jump more than 180°
+// Critical for Russia, Fiji, Alaska, Kiribati etc.
+function unwrapRing(ring: LonLat[]): LonLat[] {
+  if (ring.length === 0) return ring
+  const out: LonLat[] = [[ring[0][0], ring[0][1]]]
+  for (let i = 1; i < ring.length; i++) {
+    let [lng, lat] = ring[i]
+    const prevLng = out[i - 1][0]
+    while (lng - prevLng > 180) lng -= 360
+    while (lng - prevLng < -180) lng += 360
+    out.push([lng, lat])
+  }
+  return out
+}
+
 // Build a single polygon (outer ring + holes) into a BufferGeometry
 // Critical: earcut triangulates in 2D lon/lat space FIRST, then we project to sphere
 function buildPolygonGeometry(
@@ -32,8 +48,8 @@ function buildPolygonGeometry(
   polygon.forEach((ring, ringIndex) => {
     if (!ring || ring.length < 4) return
 
-    const cleaned = removeDuplicateClosingPoint(
-      preprocessRing(ring) as LonLat[]
+    const cleaned = unwrapRing(
+      removeDuplicateClosingPoint(ring)
     )
     if (cleaned.length < 3) return
 
@@ -132,28 +148,14 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
   return meshes
 }
 
-export function buildCoastlines(world: Topology, R: number): THREE.LineSegments {
-  const coastMesh = mesh(
+// Returns an array of LineLoop objects (one per outer ring) for accurate coastlines
+export function buildCoastlines(world: Topology, R: number): THREE.Group {
+  const countries = feature(
     world,
     (world.objects as Record<string, GeometryCollection>).countries,
   )
 
-  const positions: number[] = []
-
-  for (const coord of coastMesh.coordinates) {
-    for (let i = 0; i < coord.length - 1; i++) {
-      const [lng1, lat1] = coord[i]
-      const [lng2, lat2] = coord[i + 1]
-      const v1 = toSphere(lat1, lng1, R + GLOBE_TUNING.coastOffset)
-      const v2 = toSphere(lat2, lng2, R + GLOBE_TUNING.coastOffset)
-      positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z)
-    }
-  }
-
-  const geometry = new THREE.BufferGeometry()
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-
-  // Coastlines: eye reads these first — leads the hierarchy
+  const group = new THREE.Group()
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.coastline,
     transparent: true,
@@ -161,7 +163,32 @@ export function buildCoastlines(world: Topology, R: number): THREE.LineSegments 
     linewidth: 1,
   })
 
-  return new THREE.LineSegments(geometry, material)
+  const R_coast = R + GLOBE_TUNING.coastOffset
+
+  for (const country of countries.features) {
+    const geom = country.geometry
+    if (!geom) continue
+
+    const polygons: LonLat[][][] =
+      geom.type === 'Polygon'
+        ? [geom.coordinates as LonLat[][]]
+        : geom.type === 'MultiPolygon'
+        ? (geom.coordinates as LonLat[][][])
+        : []
+
+    for (const polygon of polygons) {
+      const outerRing = polygon[0]
+      if (!outerRing || outerRing.length < 2) continue
+
+      const cleaned = unwrapRing(removeDuplicateClosingPoint(outerRing))
+      const pts = cleaned.map(([lng, lat]) => toSphere(lat, lng, R_coast))
+
+      const geo = new THREE.BufferGeometry().setFromPoints(pts)
+      group.add(new THREE.LineLoop(geo, material))
+    }
+  }
+
+  return group
 }
 
 export function buildBorders(world: Topology, R: number): THREE.LineSegments {
