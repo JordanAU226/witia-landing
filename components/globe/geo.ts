@@ -46,12 +46,16 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
   )
 
   const meshes: THREE.Mesh[] = []
-  // Land: slightly more responsive to light than body (printed/etched feel)
+  // Land: DoubleSide critical — sphere projection can flip triangle winding
+  // polygonOffset prevents z-fighting with the base sphere
   const material = new THREE.MeshPhongMaterial({
     color: PALETTE.landFill,
-    shininess: 6,    // slightly more light response than body
+    shininess: 6,
     specular: new THREE.Color(0x1a1512),
-    side: THREE.FrontSide,
+    side: THREE.DoubleSide,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
   })
 
   for (const country of countries.features) {
@@ -69,12 +73,12 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
       if (polygon.length === 0) continue
 
       const rawOuter = polygon[0]
-      // Densify before preprocessing — critical for large countries
-      const outerRing = densifyRing(preprocessRing(normalizeRing(rawOuter)), 4)
+      // Densify at 3° — finer subdivision for large countries (Russia, Canada, USA)
+      const outerRing = densifyRing(preprocessRing(normalizeRing(rawOuter)), 3)
       if (outerRing.length < 3) continue
 
       const holes = polygon.slice(1)
-        .map(h => densifyRing(preprocessRing(normalizeRing(h)), 4))
+        .map(h => densifyRing(preprocessRing(normalizeRing(h)), 3))
         .filter(h => h.length >= 3)
 
       const flatCoords: number[] = []
@@ -108,6 +112,7 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
         const lat = flatCoords[idx * 2 + 1]
         const v = toSphere(lat, lng, R + GLOBE_TUNING.landOffset)
         positions.push(v.x, v.y, v.z)
+        // Normal always points radially outward from sphere center
         const n = v.clone().normalize()
         normals.push(n.x, n.y, n.z)
       }
@@ -115,6 +120,8 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
       const geometry = new THREE.BufferGeometry()
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
       geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
+      // Let Three.js also compute face normals as a safety net
+      geometry.computeBoundingSphere()
 
       meshes.push(new THREE.Mesh(geometry, material))
     }

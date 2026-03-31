@@ -1,6 +1,6 @@
 export const GLOBE_TUNING = {
   radius: 2.06,
-  landOffset: 0.010,
+  landOffset: 0.022,  // increased — land must sit clearly above sphere body
   coastOffset: 0.016,
   borderOffset: 0.018,
   graticuleOffset: 0.003,
