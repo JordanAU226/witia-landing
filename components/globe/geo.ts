@@ -16,6 +16,29 @@ function normalizeRing(coords: number[][]): number[][] {
   return coords
 }
 
+// Densify a ring by subdividing edges longer than maxDeg degrees
+// This is critical for large countries (Russia, Canada, USA) so sphere
+// projection doesn't produce degenerate/bowed triangles
+function densifyRing(coords: number[][], maxDeg = 5): number[][] {
+  const out: number[][] = []
+  for (let i = 0; i < coords.length; i++) {
+    const a = coords[i]
+    const b = coords[(i + 1) % coords.length]
+    out.push(a)
+    const dLng = b[0] - a[0]
+    const dLat = b[1] - a[1]
+    const dist = Math.sqrt(dLng * dLng + dLat * dLat)
+    if (dist > maxDeg) {
+      const steps = Math.ceil(dist / maxDeg)
+      for (let s = 1; s < steps; s++) {
+        const t = s / steps
+        out.push([a[0] + dLng * t, a[1] + dLat * t])
+      }
+    }
+  }
+  return out
+}
+
 export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
   const countries = feature(
     world,
@@ -46,10 +69,13 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
       if (polygon.length === 0) continue
 
       const rawOuter = polygon[0]
-      const outerRing = preprocessRing(normalizeRing(rawOuter))
+      // Densify before preprocessing — critical for large countries
+      const outerRing = densifyRing(preprocessRing(normalizeRing(rawOuter)), 4)
       if (outerRing.length < 3) continue
 
-      const holes = polygon.slice(1).map(h => preprocessRing(normalizeRing(h)))
+      const holes = polygon.slice(1)
+        .map(h => densifyRing(preprocessRing(normalizeRing(h)), 4))
+        .filter(h => h.length >= 3)
 
       const flatCoords: number[] = []
       const holeIndices: number[] = []
@@ -58,7 +84,6 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
         flatCoords.push(lng, lat)
       }
       for (const hole of holes) {
-        if (hole.length < 3) continue
         holeIndices.push(flatCoords.length / 2)
         for (const [lng, lat] of hole) {
           flatCoords.push(lng, lat)
