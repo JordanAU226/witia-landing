@@ -5,38 +5,89 @@ import type { Topology, GeometryCollection } from 'topojson-specification'
 import { GLOBE_TUNING, PALETTE } from './tuning'
 import { toSphere, preprocessRing } from './utils'
 
-// Normalize a ring: remove duplicate end-point if it matches the first
-function normalizeRing(coords: number[][]): number[][] {
-  if (coords.length < 2) return coords
-  const first = coords[0]
-  const last = coords[coords.length - 1]
-  if (first[0] === last[0] && first[1] === last[1]) {
-    return coords.slice(0, -1)
+type LonLat = [number, number]
+
+// Remove duplicate closing point from a GeoJSON ring
+function removeDuplicateClosingPoint(ring: LonLat[]): LonLat[] {
+  if (ring.length < 2) return ring
+  const [firstLng, firstLat] = ring[0]
+  const [lastLng, lastLat] = ring[ring.length - 1]
+  if (firstLng === lastLng && firstLat === lastLat) {
+    return ring.slice(0, -1)
   }
-  return coords
+  return ring
 }
 
-// Densify a ring by subdividing edges longer than maxDeg degrees
-// This is critical for large countries (Russia, Canada, USA) so sphere
-// projection doesn't produce degenerate/bowed triangles
-function densifyRing(coords: number[][], maxDeg = 5): number[][] {
-  const out: number[][] = []
-  for (let i = 0; i < coords.length; i++) {
-    const a = coords[i]
-    const b = coords[(i + 1) % coords.length]
-    out.push(a)
-    const dLng = b[0] - a[0]
-    const dLat = b[1] - a[1]
-    const dist = Math.sqrt(dLng * dLng + dLat * dLat)
-    if (dist > maxDeg) {
-      const steps = Math.ceil(dist / maxDeg)
-      for (let s = 1; s < steps; s++) {
-        const t = s / steps
-        out.push([a[0] + dLng * t, a[1] + dLat * t])
-      }
+// Build a single polygon (outer ring + holes) into a BufferGeometry
+// Critical: earcut triangulates in 2D lon/lat space FIRST, then we project to sphere
+function buildPolygonGeometry(
+  polygon: LonLat[][],
+  radius: number,
+): THREE.BufferGeometry | null {
+  if (!polygon.length) return null
+
+  const vertices2D: number[] = []
+  const holeIndices: number[] = []
+
+  polygon.forEach((ring, ringIndex) => {
+    if (!ring || ring.length < 4) return
+
+    const cleaned = removeDuplicateClosingPoint(
+      preprocessRing(ring) as LonLat[]
+    )
+    if (cleaned.length < 3) return
+
+    if (ringIndex > 0) {
+      holeIndices.push(vertices2D.length / 2)
+    }
+
+    for (const [lng, lat] of cleaned) {
+      vertices2D.push(lng, lat)
+    }
+  })
+
+  if (vertices2D.length < 6) return null
+
+  let indices: number[]
+  try {
+    indices = earcut(vertices2D, holeIndices.length ? holeIndices : undefined, 2)
+  } catch {
+    return null
+  }
+
+  if (!indices.length) return null
+
+  // Pre-compute sphere points for each 2D vertex
+  const sphereVerts: THREE.Vector3[] = []
+  for (let i = 0; i < vertices2D.length; i += 2) {
+    const lng = vertices2D[i]
+    const lat = vertices2D[i + 1]
+    sphereVerts.push(toSphere(lat, lng, radius))
+  }
+
+  const positions: number[] = []
+  const normals: number[] = []
+
+  for (let i = 0; i < indices.length; i += 3) {
+    const a = sphereVerts[indices[i]]
+    const b = sphereVerts[indices[i + 1]]
+    const c = sphereVerts[indices[i + 2]]
+
+    for (const p of [a, b, c]) {
+      positions.push(p.x, p.y, p.z)
+      const n = p.clone().normalize()
+      normals.push(n.x, n.y, n.z)
     }
   }
-  return out
+
+  if (positions.length === 0) return null
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
+  geometry.computeBoundingSphere()
+
+  return geometry
 }
 
 export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
@@ -46,76 +97,34 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
   )
 
   const meshes: THREE.Mesh[] = []
-  // Land: slightly more responsive to light than body (printed/etched feel)
   const material = new THREE.MeshPhongMaterial({
     color: PALETTE.landFill,
-    shininess: 6,    // slightly more light response than body
+    shininess: 6,
     specular: new THREE.Color(0x1a1512),
-    side: THREE.FrontSide,
+    side: THREE.DoubleSide,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
   })
+
+  const R_land = R + GLOBE_TUNING.landOffset
 
   for (const country of countries.features) {
     const geom = country.geometry
     if (!geom) continue
 
-    const polygons: number[][][][] =
-      geom.type === 'Polygon'
-        ? [geom.coordinates as number[][][]]
-        : geom.type === 'MultiPolygon'
-        ? (geom.coordinates as number[][][][])
-        : []
+    // Collect all polygons (handles both Polygon and MultiPolygon)
+    const polygons: LonLat[][][] = []
+
+    if (geom.type === 'Polygon') {
+      polygons.push(geom.coordinates as LonLat[][])
+    } else if (geom.type === 'MultiPolygon') {
+      polygons.push(...(geom.coordinates as LonLat[][][]))
+    }
 
     for (const polygon of polygons) {
-      if (polygon.length === 0) continue
-
-      const rawOuter = polygon[0]
-      // Densify before preprocessing — critical for large countries
-      const outerRing = densifyRing(preprocessRing(normalizeRing(rawOuter)), 4)
-      if (outerRing.length < 3) continue
-
-      const holes = polygon.slice(1)
-        .map(h => densifyRing(preprocessRing(normalizeRing(h)), 4))
-        .filter(h => h.length >= 3)
-
-      const flatCoords: number[] = []
-      const holeIndices: number[] = []
-
-      for (const [lng, lat] of outerRing) {
-        flatCoords.push(lng, lat)
-      }
-      for (const hole of holes) {
-        holeIndices.push(flatCoords.length / 2)
-        for (const [lng, lat] of hole) {
-          flatCoords.push(lng, lat)
-        }
-      }
-
-      let indices: number[]
-      try {
-        indices = earcut(flatCoords, holeIndices.length ? holeIndices : undefined, 2)
-      } catch {
-        continue
-      }
-
-      if (indices.length === 0) continue
-
-      const positions: number[] = []
-      const normals: number[] = []
-
-      for (let i = 0; i < indices.length; i++) {
-        const idx = indices[i]
-        const lng = flatCoords[idx * 2]
-        const lat = flatCoords[idx * 2 + 1]
-        const v = toSphere(lat, lng, R + GLOBE_TUNING.landOffset)
-        positions.push(v.x, v.y, v.z)
-        const n = v.clone().normalize()
-        normals.push(n.x, n.y, n.z)
-      }
-
-      const geometry = new THREE.BufferGeometry()
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
-
+      const geometry = buildPolygonGeometry(polygon, R_land)
+      if (!geometry) continue
       meshes.push(new THREE.Mesh(geometry, material))
     }
   }
@@ -144,7 +153,7 @@ export function buildCoastlines(world: Topology, R: number): THREE.LineSegments 
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Coastlines: eye reads these first — raised another 12%
+  // Coastlines: eye reads these first — leads the hierarchy
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.coastline,
     transparent: true,
@@ -156,7 +165,6 @@ export function buildCoastlines(world: Topology, R: number): THREE.LineSegments 
 }
 
 export function buildBorders(world: Topology, R: number): THREE.LineSegments {
-  // Interior borders between countries only
   const borderMesh = mesh(
     world,
     (world.objects as Record<string, GeometryCollection>).countries,
@@ -178,7 +186,7 @@ export function buildBorders(world: Topology, R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Borders: discoverable on inspection, never leads — reduced another 12%
+  // Borders: discoverable on inspection, never leads
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.borders,
     linewidth: 1,
@@ -191,10 +199,9 @@ export function buildBorders(world: Topology, R: number): THREE.LineSegments {
 
 export function buildGraticule(R: number): THREE.LineSegments {
   const positions: number[] = []
-  const step = 10 // 10-degree graticule
+  const step = 10
   const segments = 180
 
-  // Longitude lines
   for (let lng = -180; lng < 180; lng += step) {
     for (let i = 0; i < segments; i++) {
       const lat1 = -90 + (i / segments) * 180
@@ -205,7 +212,6 @@ export function buildGraticule(R: number): THREE.LineSegments {
     }
   }
 
-  // Latitude lines
   for (let lat = -80; lat <= 80; lat += step) {
     for (let i = 0; i < segments * 2; i++) {
       const lng1 = -180 + (i / (segments * 2)) * 360
@@ -219,7 +225,7 @@ export function buildGraticule(R: number): THREE.LineSegments {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
 
-  // Graticule: precision texture only — reduced another 22%
+  // Graticule: precision texture only
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.graticule,
     linewidth: 1,
