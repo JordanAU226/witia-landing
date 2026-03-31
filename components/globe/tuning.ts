@@ -1,6 +1,6 @@
 export const GLOBE_TUNING = {
   radius: 2.06,
-  landOffset: 0.022,  // increased — land must sit clearly above sphere body
+  landOffset: 0.010,
   coastOffset: 0.016,
   borderOffset: 0.018,
   graticuleOffset: 0.003,
@@ -37,17 +37,18 @@ export const GLOBE_TUNING = {
   },
 } as const
 
+// Raised body value ~5% — less "dense dark mass", still stone not gray
 export const PALETTE = {
-  oceanBase: '#3d3830',    // dark warm ocean — clear contrast with land
-  landFill: '#a89d93',     // land significantly lighter — unmistakable separation
-  coastline: '#6a6058',    // crisp coastline
+  oceanBase: '#5e5850',    // raised ~5% from #524d48 — warm stone, breathes
+  landFill: '#786f66',     // land clearly lighter, more responsive to key light
+  coastline: '#7a7068',    // coastline leads — readable first
   borders: '#7b736a',      // behind coastlines
   graticule: '#8e857b',    // texture only
-  nodeCore: '#284a78',
+  nodeCore: '#284a78',     // institutional slate blue
   nodeHighlight: '#89a6d3',
-  routeBody: '#8aa0c8',
+  routeBody: '#8aa0c8',    // slightly raised route body for spatial identity
   routePulse: '#6a8fd0',
-  atmosphereRim: '#ced9ed',
+  atmosphereRim: '#ced9ed', // cooler, less white
 } as const
 
 export interface NodeDef {
