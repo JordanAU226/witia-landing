@@ -43,7 +43,7 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
     color: PALETTE.landFill,
     shininess: 6,
     specular: new THREE.Color(0x1a1512),
-    side: THREE.FrontSide,
+    side: THREE.DoubleSide,   // DoubleSide: renders regardless of winding — correct for globe land
     polygonOffset: true,
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -1,
@@ -99,34 +99,14 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
       const positions: number[] = []
       const normals: number[] = []
 
-      for (let i = 0; i < indices.length; i += 3) {
-        const ia = indices[i] * 2
-        const ib = indices[i + 1] * 2
-        const ic = indices[i + 2] * 2
-
-        let a = toSphere(flatCoords[ia + 1], flatCoords[ia], R_land)
-        let b = toSphere(flatCoords[ib + 1], flatCoords[ib], R_land)
-        let c = toSphere(flatCoords[ic + 1], flatCoords[ic], R_land)
-
-        // Fix winding: earcut is CCW in 2D but sphere projection can flip triangles
-        const ab = new THREE.Vector3().subVectors(b, a)
-        const ac = new THREE.Vector3().subVectors(c, a)
-        const faceNormal = new THREE.Vector3().crossVectors(ab, ac)
-        const outward = new THREE.Vector3()
-          .addVectors(a, b)
-          .add(c)
-          .multiplyScalar(1 / 3)
-          .normalize()
-
-        if (faceNormal.dot(outward) < 0) {
-          ;[b, c] = [c, b]
-        }
-
-        for (const v of [a, b, c]) {
-          positions.push(v.x, v.y, v.z)
-          const n = v.clone().normalize()
-          normals.push(n.x, n.y, n.z)
-        }
+      for (let i = 0; i < indices.length; i++) {
+        const idx = indices[i] * 2
+        const lng = flatCoords[idx]
+        const lat = flatCoords[idx + 1]
+        const v = toSphere(lat, lng, R_land)
+        positions.push(v.x, v.y, v.z)
+        const n = v.clone().normalize()
+        normals.push(n.x, n.y, n.z)
       }
 
       const geometry = new THREE.BufferGeometry()

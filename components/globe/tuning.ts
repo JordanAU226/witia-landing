@@ -38,8 +38,8 @@ export const GLOBE_TUNING = {
 } as const
 
 export const PALETTE = {
-  oceanBase: '#3a3530',    // dark warm ocean — maximum separation from land
-  landFill: '#b5ada4',     // land clearly lighter — unmistakable at any scale
+  oceanBase: '#5e5850',    // warm stone ocean
+  landFill: '#a09890',     // land clearly lighter
   coastline: '#7a7068',    // coastline leads — readable first
   borders: '#7b736a',      // behind coastlines
   graticule: '#8e857b',    // texture only
