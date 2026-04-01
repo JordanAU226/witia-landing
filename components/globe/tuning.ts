@@ -1,6 +1,6 @@
 export const GLOBE_TUNING = {
   radius: 2.06,
-  landOffset: 0.010,
+  landOffset: 0.015,  // raised — matches brief's R + 0.012 and prevents z-fighting
   coastOffset: 0.016,
   borderOffset: 0.018,
   graticuleOffset: 0.003,
@@ -37,10 +37,9 @@ export const GLOBE_TUNING = {
   },
 } as const
 
-// Raised body value ~5% — less "dense dark mass", still stone not gray
 export const PALETTE = {
-  oceanBase: '#5e5850',    // raised ~5% from #524d48 — warm stone, breathes
-  landFill: '#786f66',     // land clearly lighter, more responsive to key light
+  oceanBase: '#3a3530',    // dark warm ocean — maximum separation from land
+  landFill: '#b5ada4',     // land clearly lighter — unmistakable at any scale
   coastline: '#7a7068',    // coastline leads — readable first
   borders: '#7b736a',      // behind coastlines
   graticule: '#8e857b',    // texture only
