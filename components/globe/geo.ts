@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import earcut from 'earcut'
-import { feature, mesh, merge } from 'topojson-client'
+import { feature, mesh } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import { GLOBE_TUNING, PALETTE } from './tuning'
 import { toSphere } from './utils'
@@ -33,105 +33,107 @@ function preprocessRing(coords: number[][]): number[][] {
 }
 
 export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
-  const objects = world.objects as Record<string, any>
-  const countriesObject = objects.countries
-
-  // Use merged landmass fill — avoids per-country border artifacts
-  const landGeometry = objects.land
-    ? (feature(world, objects.land) as any).geometry
-    : merge(world, countriesObject.geometries as any)
-
-  const polygons: number[][][][] =
-    landGeometry.type === 'Polygon'
-      ? [landGeometry.coordinates as number[][][]]
-      : landGeometry.type === 'MultiPolygon'
-      ? (landGeometry.coordinates as number[][][][])
-      : []
+  const countries = feature(
+    world,
+    (world.objects as Record<string, GeometryCollection>).countries,
+  )
 
   const meshes: THREE.Mesh[] = []
-
   const material = new THREE.MeshPhongMaterial({
     color: PALETTE.landFill,
     shininess: 6,
     specular: new THREE.Color(0x1a1512),
-    side: THREE.FrontSide, // FrontSide now safe — winding is corrected below
+    side: THREE.FrontSide,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1,
   })
 
-  for (const polygon of polygons) {
-    if (!polygon.length) continue
+  const R_land = R + GLOBE_TUNING.landOffset
 
-    const rawOuter = polygon[0]
-    const outerRing = preprocessRing(normalizeRing(rawOuter))
-    if (outerRing.length < 3) continue
+  for (const country of countries.features) {
+    const geom = country.geometry
+    if (!geom) continue
 
-    const holes = polygon
-      .slice(1)
-      .map((ring) => preprocessRing(normalizeRing(ring)))
-      .filter((ring) => ring.length >= 3)
+    const polygons: number[][][][] =
+      geom.type === 'Polygon'
+        ? [geom.coordinates as number[][][]]
+        : geom.type === 'MultiPolygon'
+        ? (geom.coordinates as number[][][][])
+        : []
 
-    const flatCoords: number[] = []
-    const holeIndices: number[] = []
+    for (const polygon of polygons) {
+      if (!polygon.length) continue
 
-    for (const [lng, lat] of outerRing) {
-      flatCoords.push(lng, lat)
-    }
+      const rawOuter = polygon[0]
+      const outerRing = preprocessRing(normalizeRing(rawOuter))
+      if (outerRing.length < 3) continue
 
-    for (const hole of holes) {
-      holeIndices.push(flatCoords.length / 2)
-      for (const [lng, lat] of hole) {
+      const holes = polygon
+        .slice(1)
+        .map((ring) => preprocessRing(normalizeRing(ring)))
+        .filter((ring) => ring.length >= 3)
+
+      const flatCoords: number[] = []
+      const holeIndices: number[] = []
+
+      for (const [lng, lat] of outerRing) {
         flatCoords.push(lng, lat)
       }
-    }
-
-    let indices: number[]
-    try {
-      indices = earcut(flatCoords, holeIndices.length ? holeIndices : undefined, 2)
-    } catch {
-      continue
-    }
-
-    if (indices.length < 3) continue
-
-    const positions: number[] = []
-    const normals: number[] = []
-
-    for (let i = 0; i < indices.length; i += 3) {
-      const ia = indices[i] * 2
-      const ib = indices[i + 1] * 2
-      const ic = indices[i + 2] * 2
-
-      let a = toSphere(flatCoords[ia + 1], flatCoords[ia], R + GLOBE_TUNING.landOffset)
-      let b = toSphere(flatCoords[ib + 1], flatCoords[ib], R + GLOBE_TUNING.landOffset)
-      let c = toSphere(flatCoords[ic + 1], flatCoords[ic], R + GLOBE_TUNING.landOffset)
-
-      // Fix winding after projection to sphere.
-      // earcut guarantees CCW in 2D, but sphere projection can flip triangles.
-      // Check face normal against outward direction and correct if flipped.
-      const ab = new THREE.Vector3().subVectors(b, a)
-      const ac = new THREE.Vector3().subVectors(c, a)
-      const faceNormal = new THREE.Vector3().crossVectors(ab, ac)
-      const outward = new THREE.Vector3()
-        .addVectors(a, b)
-        .add(c)
-        .multiplyScalar(1 / 3)
-        .normalize()
-
-      if (faceNormal.dot(outward) < 0) {
-        ;[b, c] = [c, b]
+      for (const hole of holes) {
+        holeIndices.push(flatCoords.length / 2)
+        for (const [lng, lat] of hole) {
+          flatCoords.push(lng, lat)
+        }
       }
 
-      for (const v of [a, b, c]) {
-        positions.push(v.x, v.y, v.z)
-        const n = v.clone().normalize()
-        normals.push(n.x, n.y, n.z)
+      let indices: number[]
+      try {
+        indices = earcut(flatCoords, holeIndices.length ? holeIndices : undefined, 2)
+      } catch {
+        continue
       }
+
+      if (indices.length < 3) continue
+
+      const positions: number[] = []
+      const normals: number[] = []
+
+      for (let i = 0; i < indices.length; i += 3) {
+        const ia = indices[i] * 2
+        const ib = indices[i + 1] * 2
+        const ic = indices[i + 2] * 2
+
+        let a = toSphere(flatCoords[ia + 1], flatCoords[ia], R_land)
+        let b = toSphere(flatCoords[ib + 1], flatCoords[ib], R_land)
+        let c = toSphere(flatCoords[ic + 1], flatCoords[ic], R_land)
+
+        // Fix winding: earcut is CCW in 2D but sphere projection can flip triangles
+        const ab = new THREE.Vector3().subVectors(b, a)
+        const ac = new THREE.Vector3().subVectors(c, a)
+        const faceNormal = new THREE.Vector3().crossVectors(ab, ac)
+        const outward = new THREE.Vector3()
+          .addVectors(a, b)
+          .add(c)
+          .multiplyScalar(1 / 3)
+          .normalize()
+
+        if (faceNormal.dot(outward) < 0) {
+          ;[b, c] = [c, b]
+        }
+
+        for (const v of [a, b, c]) {
+          positions.push(v.x, v.y, v.z)
+          const n = v.clone().normalize()
+          normals.push(n.x, n.y, n.z)
+        }
+      }
+
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+      geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
+      meshes.push(new THREE.Mesh(geometry, material))
     }
-
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3))
-
-    meshes.push(new THREE.Mesh(geometry, material))
   }
 
   return meshes
