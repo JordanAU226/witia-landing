@@ -137,14 +137,31 @@ export function buildLandMeshes(world: Topology, R: number): THREE.Mesh[] {
   return meshes
 }
 
-// Coastlines: per-polygon outer ring as LineLoop
-export function buildCoastlines(world: Topology, R: number): THREE.Group {
-  const countries = feature(
+// Coastlines: outer boundaries only using (a, b) => a === b
+// This returns only coastlines (boundaries where a country meets itself / ocean)
+// NOT interior borders between countries
+export function buildCoastlines(world: Topology, R: number): THREE.LineSegments {
+  const coastMesh = mesh(
     world,
     (world.objects as Record<string, GeometryCollection>).countries,
+    (a, b) => a === b,
   )
 
-  const group = new THREE.Group()
+  const positions: number[] = []
+
+  for (const coord of coastMesh.coordinates) {
+    for (let i = 0; i < coord.length - 1; i++) {
+      const [lng1, lat1] = coord[i]
+      const [lng2, lat2] = coord[i + 1]
+      const v1 = toSphere(lat1, lng1, R + GLOBE_TUNING.coastOffset)
+      const v2 = toSphere(lat2, lng2, R + GLOBE_TUNING.coastOffset)
+      positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z)
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.coastline,
     transparent: true,
@@ -152,32 +169,7 @@ export function buildCoastlines(world: Topology, R: number): THREE.Group {
     linewidth: 1,
   })
 
-  const R_coast = R + GLOBE_TUNING.coastOffset
-
-  for (const country of countries.features) {
-    const geom = country.geometry
-    if (!geom) continue
-
-    const polygons: LonLat[][][] =
-      geom.type === 'Polygon'
-        ? [geom.coordinates as LonLat[][]]
-        : geom.type === 'MultiPolygon'
-        ? (geom.coordinates as LonLat[][][])
-        : []
-
-    for (const polygon of polygons) {
-      const outerRing = polygon[0]
-      if (!outerRing || outerRing.length < 2) continue
-
-      const cleaned = preprocessRing(normalizeRing(outerRing)) as LonLat[]
-      const pts = cleaned.map(([lng, lat]) => toSphere(lat, lng, R_coast))
-
-      const geo = new THREE.BufferGeometry().setFromPoints(pts)
-      group.add(new THREE.LineLoop(geo, material))
-    }
-  }
-
-  return group
+  return new THREE.LineSegments(geometry, material)
 }
 
 // Country borders (interior boundaries only)

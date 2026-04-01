@@ -126,15 +126,8 @@ export default function PremiumGlobe({
         if (landMeshes.length > 0) disposables.push(landMeshes[0].material as THREE.Material)
 
         // Coastlines
-        // coastlines is now a THREE.Group of LineLoop objects
         const coastlines = buildCoastlines(world, GLOBE_TUNING.radius)
-        coastlines.children.forEach(child => {
-          const line = child as THREE.LineLoop
-          disposables.push(line.geometry)
-        })
-        if (coastlines.children.length > 0) {
-          disposables.push((coastlines.children[0] as THREE.LineLoop).material as THREE.Material)
-        }
+        disposables.push(coastlines.geometry, coastlines.material as THREE.Material)
         group.add(coastlines)
 
         // Borders
