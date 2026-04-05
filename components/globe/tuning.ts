@@ -38,16 +38,16 @@ export const GLOBE_TUNING = {
 } as const
 
 export const PALETTE = {
-  oceanBase: '#2d2824',
-  landFill: '#645d55',
-  coastline: '#8b8277',
-  borders: '#6d665f',
-  graticule: '#59534d',
-  nodeCore: '#2f5b95',
-  nodeHighlight: '#89a8d8',
-  routeBody: '#7d98c6',
-  routePulse: '#6b8fd6',
-  atmosphereRim: '#dde5f0',
+  oceanBase: '#312b27',
+  landFill: '#6c645b',
+  coastline: '#948a7f',
+  borders: '#776f67',
+  graticule: '#5f5851',
+  nodeCore: '#315f98',
+  nodeHighlight: '#8daddc',
+  routeBody: '#809bc7',
+  routePulse: '#6d90d6',
+  atmosphereRim: '#dfe6f0',
 } as const
 
 export interface NodeDef {
