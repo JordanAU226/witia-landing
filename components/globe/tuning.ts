@@ -97,15 +97,79 @@ export const NODES: NodeDef[] = [
   { id: 'phoenix',    lat: 33.4,  lng: -112.1, tier: 'ambient' },
 ]
 
-// Routes: transatlantic is the signature hero arc
-// Only 1-2 readable at once — hero arc + 1 supporting
 export const ROUTES: string[][] = [
-  ['london', 'new-york'],   // HERO ARC — transatlantic, visible in default pose
-  ['london', 'lagos'],      // supporting — UK-Africa, origin story
-  ['brussels', 'nairobi'],  // EU-Africa corridor
-  ['london', 'brussels'],   // European institutional
-  ['new-york', 'washington'],
-  ['lagos', 'nairobi'],
-  ['new-york', 'singapore'],
-  ['london', 'birmingham'],
+  ['london', 'brussels'],      // beat 1 — London-Brussels support
+  ['brussels', 'lagos'],       // beat 2 — Brussels-Lagos hero
+  ['lagos', 'nairobi'],        // beat 3 — Lagos-Nairobi support
+  ['nairobi', 'new-york'],     // beat 4 — Nairobi-NewYork hero (global)
+  ['london', 'new-york'],      // background after 10s
+  ['london', 'lagos'],         // background
 ]
+
+export const HERO_SEQUENCE = [
+  {
+    id: 'london-brussels',
+    from: 'london',
+    to: 'brussels',
+    strength: 'support' as const,
+    startMs: 1200,
+    launchMs: 250,
+    travelMs: 1750,
+    arrivalMs: 250,
+    cooldownMs: 250,
+  },
+  {
+    id: 'brussels-lagos',
+    from: 'brussels',
+    to: 'lagos',
+    strength: 'hero' as const,
+    startMs: 3200,
+    launchMs: 300,
+    travelMs: 2000,
+    arrivalMs: 300,
+    cooldownMs: 350,
+  },
+  {
+    id: 'lagos-nairobi',
+    from: 'lagos',
+    to: 'nairobi',
+    strength: 'support' as const,
+    startMs: 5800,
+    launchMs: 250,
+    travelMs: 1750,
+    arrivalMs: 250,
+    cooldownMs: 200,
+  },
+  {
+    id: 'nairobi-new-york',
+    from: 'nairobi',
+    to: 'new-york',
+    strength: 'hero' as const,
+    startMs: 8200,
+    launchMs: 350,
+    travelMs: 2600,
+    arrivalMs: 350,
+    cooldownMs: 400,
+  },
+] as const
+
+export const ROUTE_STYLE = {
+  hero: {
+    core: 0.24,
+    mid: 0.09,
+    outer: 0.03,
+    pulse: 0.82,
+  },
+  support: {
+    core: 0.14,
+    mid: 0.05,
+    outer: 0.015,
+    pulse: 0.62,
+  },
+} as const
+
+export const HERO_MOTION = {
+  idleYawAmplitude: 0.025,
+  idlePitchAmplitude: 0.008,
+  idlePeriodMs: 42000,
+} as const

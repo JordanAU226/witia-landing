@@ -2,8 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { GLOBE_TUNING, PALETTE, NODES, ROUTES } from './globe/tuning'
-import { toSphere } from './globe/utils'
+import { GLOBE_TUNING, PALETTE, NODES, ROUTES, HERO_SEQUENCE, ROUTE_STYLE, HERO_MOTION, NODE_STYLE } from './globe/tuning'
 import { buildLandMeshes, buildCoastlines, buildBorders, buildGraticule } from './globe/geo'
 import { buildInnerAtmosphere, buildOuterHalo } from './globe/atmosphere'
 import { buildRoutes, type RouteObject } from './globe/routes'
@@ -39,14 +38,11 @@ export default function PremiumGlobe({
     const renderSize = isMobile ? 280 : isTablet ? 380 : size
     // Sphere segments by device tier
     const sphereSegments = isMobile ? 32 : isTablet ? 48 : 64
-    // Max routes to animate by device tier
-    const maxRoutes = isMobile ? 3 : isTablet ? 5 : Infinity
 
     // ── Dispose registry ────────────────────────────────────────────────────
     const disposables: { dispose(): void }[] = []
 
     // ── Renderer ─────────────────────────────────────────────────────────────
-    // Mobile: cap pixel ratio at 1.5 for performance
     const pixelRatio = isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -70,12 +66,11 @@ export default function PremiumGlobe({
 
     // ── Globe group ──────────────────────────────────────────────────────────
     const group = new THREE.Group()
-    // Hero pose: canonical load state
-    group.rotation.x = GLOBE_TUNING.motion.defaultRotX  // -0.165
-    group.rotation.y = GLOBE_TUNING.motion.defaultRotY  // 0.345
+    group.rotation.x = GLOBE_TUNING.motion.defaultRotX
+    group.rotation.y = GLOBE_TUNING.motion.defaultRotY
     scene.add(group)
 
-    // ── Lighting (scene-level, not rotating) ─────────────────────────────────
+    // ── Lighting ─────────────────────────────────────────────────────────────
     const lights = buildLighting()
     lights.forEach(l => scene.add(l))
 
@@ -93,8 +88,7 @@ export default function PremiumGlobe({
     const sphere = new THREE.Mesh(sphereGeom, sphereMat)
     group.add(sphere)
 
-    // ── Atmosphere shells (scene-level so they don't rotate with globe) ──────
-    // Actually keep on group so they render relative to globe center
+    // ── Atmosphere shells ────────────────────────────────────────────────────
     const innerAtmo = buildInnerAtmosphere(GLOBE_TUNING)
     const outerHalo = buildOuterHalo(GLOBE_TUNING)
     disposables.push(innerAtmo.geometry, innerAtmo.material as THREE.Material)
@@ -106,6 +100,110 @@ export default function PremiumGlobe({
     let routes: RouteObject[] = []
     let nodeVisuals: NodeVisual[] = []
     let interactionCtrl: ReturnType<typeof createInteractionController> | null = null
+
+    // ── Hero sequence state ──────────────────────────────────────────────────
+    let heroStartedAt = -1
+    const rippleTimers = new Map<string, number>()
+    let nodeVisualMap = new Map<string, NodeVisual>()
+    let routeMap = new Map<string, RouteObject>()
+
+    // ── Helper functions ─────────────────────────────────────────────────────
+    function setRouteVisibility(route: RouteObject, k: number, strength: 'hero' | 'support') {
+      const style = ROUTE_STYLE[strength]
+      ;(route.tube.material as THREE.MeshBasicMaterial).opacity = k * style.core
+      ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = k * style.mid
+    }
+
+    function setPulsePosition(route: RouteObject, travelT: number) {
+      const ptIdx = Math.min(Math.floor(travelT * route.points.length), route.points.length - 1)
+      route.pulse.position.copy(route.points[ptIdx])
+    }
+
+    function setPulseOpacity(route: RouteObject, opacity: number) {
+      route.pulseMat.opacity = opacity
+    }
+
+    function triggerRippleOnce(beatId: string, nowMs: number) {
+      if (!rippleTimers.has(beatId)) {
+        rippleTimers.set(beatId, nowMs)
+      }
+    }
+
+    function updateRipples(visMap: Map<string, NodeVisual>, nowMs: number) {
+      rippleTimers.forEach((startMs, beatId) => {
+        const elapsed = nowMs - startMs
+        if (elapsed > 850) return
+        const beat = HERO_SEQUENCE.find(b => b.id === beatId)
+        if (!beat) return
+        const node = visMap.get(beat.to)
+        if (!node) return
+        const t = elapsed / 850
+        const rippleOpacity = 0.18 * Math.sin(t * Math.PI)
+        node.glowMat.opacity = NODE_STYLE[node.tier].baseGlow + rippleOpacity
+      })
+    }
+
+    function updateHeroSequence(
+      nowMs: number,
+      visMap: Map<string, NodeVisual>,
+      rMap: Map<string, RouteObject>,
+    ) {
+      const t = nowMs - heroStartedAt
+
+      // Reset all nodes to idle
+      visMap.forEach(node => setNodeState(node, 'idle', nowMs))
+
+      // Reset all routes to invisible
+      rMap.forEach(route => {
+        setRouteVisibility(route, 0, 'support')
+        setPulseOpacity(route, 0)
+      })
+
+      // Process each beat
+      for (const beat of HERO_SEQUENCE) {
+        const local = t - beat.startMs
+        if (local < 0) continue
+
+        const route = rMap.get(beat.id)
+        if (!route) continue
+
+        const total = beat.launchMs + beat.travelMs + beat.arrivalMs + beat.cooldownMs
+        if (local > total) continue
+
+        if (local <= beat.launchMs) {
+          const k = local / beat.launchMs
+          const fromNode = visMap.get(beat.from)
+          if (fromNode) setNodeState(fromNode, 'send', nowMs)
+          setRouteVisibility(route, k, beat.strength)
+          continue
+        }
+
+        if (local <= beat.launchMs + beat.travelMs) {
+          const travelT = (local - beat.launchMs) / beat.travelMs
+          const fromNode = visMap.get(beat.from)
+          if (fromNode) setNodeState(fromNode, 'send', nowMs)
+          setRouteVisibility(route, 1, beat.strength)
+          setPulsePosition(route, travelT)
+          setPulseOpacity(route, beat.strength === 'hero' ? ROUTE_STYLE.hero.pulse : ROUTE_STYLE.support.pulse)
+          continue
+        }
+
+        if (local <= beat.launchMs + beat.travelMs + beat.arrivalMs) {
+          const toNode = visMap.get(beat.to)
+          if (toNode) setNodeState(toNode, 'receive', nowMs)
+          setRouteVisibility(route, 1, beat.strength)
+          triggerRippleOnce(beat.id, nowMs)
+          continue
+        }
+
+        // Cooldown fade
+        const fadeT = (local - beat.launchMs - beat.travelMs - beat.arrivalMs) / beat.cooldownMs
+        setRouteVisibility(route, 1 - fadeT, beat.strength)
+      }
+
+      // Update ripple animations
+      updateRipples(visMap, nowMs)
+    }
 
     // ── Geo data (async) ─────────────────────────────────────────────────────
     const abortCtrl = new AbortController()
@@ -119,7 +217,6 @@ export default function PremiumGlobe({
           disposables.push(m.geometry)
           group.add(m)
         })
-        // Share material (all land meshes use same material)
         if (landMeshes.length > 0) disposables.push(landMeshes[0].material as THREE.Material)
 
         // Coastlines
@@ -152,7 +249,7 @@ export default function PremiumGlobe({
           group.add(r.pulse)
         })
 
-        // Nodes — using new NodeVisual system
+        // Nodes
         nodeVisuals = buildNodes(NODES, GLOBE_TUNING.radius)
         nodeVisuals.forEach(n => {
           disposables.push(n.glow.geometry, n.glowMat)
@@ -161,9 +258,27 @@ export default function PremiumGlobe({
           group.add(n.group)
         })
 
+        // ── Build lookup maps ───────────────────────────────────────────────
+        nodeVisualMap = new Map<string, NodeVisual>()
+        nodeVisuals.forEach(n => nodeVisualMap.set(n.id, n))
+
+        routeMap = new Map<string, RouteObject>()
+        const routeIds = [
+          'london-brussels',
+          'brussels-lagos',
+          'lagos-nairobi',
+          'nairobi-new-york',
+          'london-new-york',
+          'london-lagos',
+        ]
+        routes.forEach((r, i) => {
+          if (routeIds[i]) routeMap.set(routeIds[i], r)
+        })
+
+        // Start hero sequence timer
+        heroStartedAt = Date.now()
+
         // ── Interaction ─────────────────────────────────────────────────────
-        // Mobile: light touch drag only, no scroll conflict
-        // Reduced motion: no interaction at all — pure poster state
         if (interactive && !prefersReducedMotion) {
           interactionCtrl = createInteractionController(group, renderer.domElement)
         }
@@ -178,104 +293,52 @@ export default function PremiumGlobe({
     function animate() {
       rafId = requestAnimationFrame(animate)
 
-      // Interaction update
-      if (interactionCtrl) {
-        interactionCtrl.update()
-      } else if (interactive === false) {
-        // No interaction — just drift
-        group.rotation.y += 0.00040
-      } else {
-        // Waiting for data — slow drift
-        group.rotation.y += 0.00040
-      }
+      const nowMs = Date.now()
 
-      const now = Date.now()
-
-      // ── Constrained curated drift ───────────────────────────────────────────
-      // Long 62s cycle, asymmetric: ~65% dwell on Africa/Europe best face
-      // Uses a biased sine so it spends more time near zero (default pose)
+      // ── Globe motion ────────────────────────────────────────────────────────
       const { defaultRotY, defaultRotX, sweepAmplitude, sweepPeriod } = GLOBE_TUNING.motion
-      const sweepT = (now % sweepPeriod) / sweepPeriod
-      // Biased sweep: cube the sine to create longer dwell at zero crossing
-      const rawSin = Math.sin(sweepT * Math.PI * 2)
-      const biasedSweep = Math.sign(rawSin) * Math.pow(Math.abs(rawSin), 2.2)
-      const sweepAngle = sweepAmplitude * biasedSweep * 0.65
-      // Pitch: 1-2° max, very slow
-      const pitchBreath = (1.2 * Math.PI / 180) * Math.sin(now * 0.000065)
 
       if (prefersReducedMotion) {
-        // Static poster state — perfectly composed, no motion
         group.rotation.y = defaultRotY
         group.rotation.x = defaultRotX
-      } else if (interactionCtrl) {
-        interactionCtrl.update()
+      } else if (heroStartedAt > 0) {
+        const elapsed = nowMs - heroStartedAt
+        const isInHeroSequence = elapsed < 10000
+
+        if (isInHeroSequence) {
+          // Nearly static during the 10s authored narrative — only micro drift
+          const { idleYawAmplitude, idlePitchAmplitude, idlePeriodMs } = HERO_MOTION
+          const microYaw = idleYawAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 2)
+          const microPitch = idlePitchAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 1.3)
+          group.rotation.y = defaultRotY + microYaw
+          group.rotation.x = defaultRotX + microPitch
+        } else {
+          // After 10s: slow biased drift toward Americas
+          const sweepT = (nowMs % sweepPeriod) / sweepPeriod
+          const rawSin = Math.sin(sweepT * Math.PI * 2)
+          const biasedSweep = Math.sign(rawSin) * Math.pow(Math.abs(rawSin), 2.2)
+          const sweepAngle = sweepAmplitude * biasedSweep * 0.65
+          const pitchBreath = (1.2 * Math.PI / 180) * Math.sin(nowMs * 0.000065)
+
+          if (interactionCtrl) {
+            interactionCtrl.update()
+          } else {
+            group.rotation.y += (defaultRotY + sweepAngle - group.rotation.y) * 0.0008
+            group.rotation.x += (defaultRotX + pitchBreath - group.rotation.x) * 0.0008
+          }
+        }
       } else {
-        group.rotation.y += (defaultRotY + sweepAngle - group.rotation.y) * 0.0008
-        group.rotation.x += (defaultRotX + pitchBreath - group.rotation.x) * 0.0008
+        // Waiting for geo data — slow drift
+        group.rotation.y += 0.00040
       }
 
-      // ── Animate nodes using setNodeState ────────────────────────────────────
-      nodeVisuals.forEach(node => {
-        setNodeState(node, 'idle', now)
-      })
-
-      // ── Route animation: progressive fidelity by device tier ────────────────
-      // Routes[0] = transatlantic (hero), Routes[1] = London-Lagos (supporting)
-      // Remaining routes shown only as static lines at low opacity
-      // maxRoutes caps the number of animated routes (mobile=3, tablet=5, desktop=all)
-      routes.forEach((route, idx) => {
-        const isHero = idx === 0      // transatlantic — the ONE route that carries meaning
-        const isSupport = idx === 1   // London-Lagos — quieter second arc
-
-        // Beyond device tier limit: hide entirely
-        if (idx >= maxRoutes) {
-          ;(route.tube.material as THREE.MeshBasicMaterial).opacity = 0
-          ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = 0
-          route.pulseMat.opacity = 0
-          return
-        }
-
-        // Hero arc: raised ~10% for spatial identity vs sphere body
-        // Support arc: lower, never competes with hero
-        // Others: invisible pulse, very low line
-        const cycleMs = isHero ? 5800 : 6800 + idx * 500
-        const t = ((now + route.offset) % cycleMs) / cycleMs
-
-        const maxOpacity = isHero ? 0.26 : isSupport ? 0.12 : 0.05
-        const lineAlpha = t < 0.08 ? t / 0.08 : t > 0.88 ? (1 - t) / 0.12 : 1
-        ;(route.tube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * maxOpacity
-        // Glow: hero gets a restrained glow for spatial separation, support minimal
-        ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = lineAlpha * (isHero ? 0.07 : 0.02)
-
-        // SINGLE pulse: only the hero arc has a strong pulse
-        // Support arc gets a very quiet one — never reads as a second bright accent
-        if (isHero || isSupport) {
-          const pulseT = Math.pow(t, 0.92) // smooth ease
-          const ptIdx = Math.min(Math.floor(pulseT * route.points.length), route.points.length - 1)
-          route.pulse.position.copy(route.points[ptIdx])
-
-          const basePulse = isHero ? 0.92 : 0.28 // support pulse barely visible
-          route.pulseMat.opacity = lineAlpha * basePulse
-
-          // Arrival bloom — brief, one moment only
-          const nearEnd = Math.max(0, 1 - Math.abs(t - 0.82) / 0.18)
-          if (nearEnd > 0) {
-            route.pulseMat.opacity = Math.min(0.97, route.pulseMat.opacity + nearEnd * 0.30)
-
-            // During route pulse arrivals — trigger send/receive states
-            if (nearEnd > 0.6 && isHero) {
-              // Find london node and set to receive
-              const londonNode = nodeVisuals.find(n => n.id === 'london')
-              if (londonNode) setNodeState(londonNode, 'receive', now)
-              // Near departure: lagos sends
-              const lagosNode = nodeVisuals.find(n => n.id === 'lagos')
-              if (lagosNode && t < 0.2) setNodeState(lagosNode, 'send', now)
-            }
-          }
-        } else {
-          route.pulseMat.opacity = 0
-        }
-      })
+      // ── Hero sequence ───────────────────────────────────────────────────────
+      if (heroStartedAt > 0 && nodeVisualMap.size > 0 && routeMap.size > 0) {
+        updateHeroSequence(nowMs, nodeVisualMap, routeMap)
+      } else {
+        // Pre-load: idle nodes
+        nodeVisuals.forEach(node => setNodeState(node, 'idle', nowMs))
+      }
 
       renderer.render(scene, camera)
     }
@@ -288,7 +351,7 @@ export default function PremiumGlobe({
       const isMobileNow = window.innerWidth <= 600
       const isTabletNow = window.innerWidth > 600 && window.innerWidth <= 1024
       const w = isMobileNow ? 280 : isTabletNow ? 380 : mount.clientWidth
-      const h = w // square aspect
+      const h = w
       camera.aspect = 1
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
