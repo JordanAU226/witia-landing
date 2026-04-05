@@ -355,8 +355,16 @@ export default function PremiumGlobe({
     const getBaseRotation = (nowMs: number) => {
       const { defaultRotX, defaultRotY, sweepAmplitude, sweepPeriod } = GLOBE_TUNING.motion
 
-      if (prefersReducedMotion || runtime.heroStartedAt === null) {
+      if (prefersReducedMotion) {
         return { x: defaultRotX, y: defaultRotY }
+      }
+
+      // Before assets load: slow idle drift so globe is already moving on first paint
+      if (runtime.heroStartedAt === null) {
+        return {
+          x: defaultRotX,
+          y: defaultRotY + (nowMs * 0.00018) % (Math.PI * 2),
+        }
       }
 
       const elapsed = getEffectiveHeroElapsed(nowMs)
@@ -380,22 +388,59 @@ export default function PremiumGlobe({
       }
     }
 
+    let isDragging = false
+    let dragLastX = 0
+    let dragLastY = 0
+    let dragVelX = 0
+    let dragVelY = 0
+    let dragOffsetX = 0
+    let dragOffsetY = 0
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!interactive) return
+      isDragging = true
+      dragLastX = event.clientX
+      dragLastY = event.clientY
+      dragVelX = 0
+      dragVelY = 0
+      renderer.domElement.setPointerCapture(event.pointerId)
+    }
+
     const onPointerMove = (event: PointerEvent) => {
       if (!interactive || prefersReducedMotion) return
+
+      if (isDragging) {
+        const dx = event.clientX - dragLastX
+        const dy = event.clientY - dragLastY
+        dragVelX = dy * 0.004
+        dragVelY = dx * 0.004
+        dragOffsetX += dragVelX
+        dragOffsetY += dragVelY
+        dragLastX = event.clientX
+        dragLastY = event.clientY
+        return
+      }
+
+      // Hover parallax (desktop only)
       const profile = getProfile(window.innerWidth, quality, size, mount)
       if (profile.isMobile) return
-
       const rect = renderer.domElement.getBoundingClientRect()
       const nx = (event.clientX - rect.left) / rect.width - 0.5
       const ny = (event.clientY - rect.top) / rect.height - 0.5
-
       runtime.pointerTargetY = nx * 0.055
       runtime.pointerTargetX = -ny * 0.028
     }
 
+    const onPointerUp = (event: PointerEvent) => {
+      isDragging = false
+      renderer.domElement.releasePointerCapture(event.pointerId)
+    }
+
     const onPointerLeave = () => {
-      runtime.pointerTargetX = 0
-      runtime.pointerTargetY = 0
+      if (!isDragging) {
+        runtime.pointerTargetX = 0
+        runtime.pointerTargetY = 0
+      }
     }
 
     const onVisibilityChange = () => {
@@ -411,7 +456,9 @@ export default function PremiumGlobe({
       prefersReducedMotion = event.matches
     }
 
+    renderer.domElement.addEventListener('pointerdown', onPointerDown)
     renderer.domElement.addEventListener('pointermove', onPointerMove)
+    renderer.domElement.addEventListener('pointerup', onPointerUp)
     renderer.domElement.addEventListener('pointerleave', onPointerLeave)
     document.addEventListener('visibilitychange', onVisibilityChange)
     reduceMotionMQ.addEventListener('change', onReducedMotionChange)
@@ -511,8 +558,16 @@ export default function PremiumGlobe({
       runtime.pointerCurrentX += (runtime.pointerTargetX - runtime.pointerCurrentX) * 0.08
       runtime.pointerCurrentY += (runtime.pointerTargetY - runtime.pointerCurrentY) * 0.08
 
-      const finalX = base.x + runtime.pointerCurrentX
-      const finalY = base.y + runtime.pointerCurrentY
+      // Drag velocity decay
+      if (!isDragging) {
+        dragVelX *= 0.92
+        dragVelY *= 0.92
+        dragOffsetX += dragVelX
+        dragOffsetY += dragVelY
+      }
+
+      const finalX = base.x + runtime.pointerCurrentX + dragOffsetX
+      const finalY = base.y + runtime.pointerCurrentY + dragOffsetY
 
       const ease = runtime.assetsReady ? 0.03 : 0.012
       group.rotation.x += (finalX - group.rotation.x) * ease
@@ -537,7 +592,9 @@ export default function PremiumGlobe({
       abortCtrl.abort()
       cancelAnimationFrame(rafId)
       resizeObserver.disconnect()
+      renderer.domElement.removeEventListener('pointerdown', onPointerDown)
       renderer.domElement.removeEventListener('pointermove', onPointerMove)
+      renderer.domElement.removeEventListener('pointerup', onPointerUp)
       renderer.domElement.removeEventListener('pointerleave', onPointerLeave)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       reduceMotionMQ.removeEventListener('change', onReducedMotionChange)
