@@ -14,7 +14,7 @@ import {
 import { buildLandMeshes, buildCoastlines, buildBorders, buildGraticule } from './globe/geo'
 import { buildInnerAtmosphere, buildOuterHalo } from './globe/atmosphere'
 import { buildRoutes, type RouteObject } from './globe/routes'
-import { buildNodes, setNodeState, type NodeVisual } from './globe/nodes'
+import { buildNodes, setNodeState, updateNodeVisual, setNodeEdgeAttenuation, type NodeVisual } from './globe/nodes'
 import { buildLighting } from './globe/lighting'
 import { RippleSystem } from './globe/ripples'
 
@@ -516,7 +516,7 @@ export default function PremiumGlobe({
         runtime.nodeVisuals = buildNodes(NODES, GLOBE_TUNING.radius)
         runtime.nodeVisuals.forEach((node) => {
           disposables.push(node.glow.geometry, node.glowMat)
-          disposables.push(node.core.geometry, node.core.material as THREE.Material)
+          disposables.push(node.core.geometry, node.coreMat)
           disposables.push(node.highlight.geometry, node.hiMat)
           group.add(node.group)
         })
@@ -578,6 +578,18 @@ export default function PremiumGlobe({
       } else {
         runtime.nodeVisuals.forEach((node) => setNodeState(node, 'idle', nowMs))
       }
+
+      // Update node visuals with limb attenuation — prevents stray blue pinpricks at edge
+      runtime.nodeVisuals.forEach((node) => {
+        const nodeDir = node.pos.clone().normalize()
+        // Apply group rotation to get world-space direction
+        const worldDir = nodeDir.clone().applyQuaternion(group.quaternion)
+        const cameraDir = camera.position.clone().normalize()
+        const facing = worldDir.dot(cameraDir)
+        const edgeAttenuation = THREE.MathUtils.clamp((facing + 0.08) / 0.28, 0, 1)
+        setNodeEdgeAttenuation(node, edgeAttenuation)
+        updateNodeVisual(node, nowMs)
+      })
 
       renderer.render(scene, camera)
     }
