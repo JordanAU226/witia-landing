@@ -38,16 +38,16 @@ export const GLOBE_TUNING = {
 } as const
 
 export const PALETTE = {
-  oceanBase: '#5e5850',    // warm stone ocean
-  landFill: '#a09890',     // land clearly lighter
-  coastline: '#7a7068',    // coastline leads — readable first
-  borders: '#7b736a',      // behind coastlines
-  graticule: '#8e857b',    // texture only
-  nodeCore: '#284a78',     // institutional slate blue
-  nodeHighlight: '#89a6d3',
-  routeBody: '#8aa0c8',    // slightly raised route body for spatial identity
-  routePulse: '#6a8fd0',
-  atmosphereRim: '#ced9ed', // cooler, less white
+  oceanBase: '#2d2824',
+  landFill: '#645d55',
+  coastline: '#8b8277',
+  borders: '#6d665f',
+  graticule: '#59534d',
+  nodeCore: '#2f5b95',
+  nodeHighlight: '#89a8d8',
+  routeBody: '#7d98c6',
+  routePulse: '#6b8fd6',
+  atmosphereRim: '#dde5f0',
 } as const
 
 export interface NodeDef {
