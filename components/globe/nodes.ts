@@ -1,70 +1,89 @@
 import * as THREE from 'three'
-import { GLOBE_TUNING, PALETTE } from './tuning'
-import type { NodeDef } from './tuning'
+import type { NodeDef, NodeTier } from './tuning'
+import { NODE_STYLE, NODE_COLORS } from './tuning'
 import { toSphere } from './utils'
 
-export interface NodeObject {
-  halo: THREE.Mesh
+export interface NodeVisual {
+  id: string
+  tier: NodeTier
+  group: THREE.Group
+  glow: THREE.Mesh
   core: THREE.Mesh
-  highlight: THREE.Mesh | null
-  haloMat: THREE.MeshBasicMaterial
-  tier: 1 | 2 | 3
+  highlight: THREE.Mesh
   pos: THREE.Vector3
+  glowMat: THREE.MeshBasicMaterial
+  hiMat: THREE.MeshBasicMaterial
 }
 
-// Node sizes — three-tier hub system
-// At hero scale: tier1 core ~7-8px, tier2 ~5-6px, tier3 ~4-5px
-const TIER_CONFIG = {
-  1: { haloR: 0.068, coreR: 0.034, hlR: 0.010 },
-  2: { haloR: 0.048, coreR: 0.024, hlR: 0.006 },
-  3: { haloR: 0.036, coreR: 0.018, hlR: 0 },
+export function createNodeVisual(
+  node: NodeDef,
+  radius: number,
+): NodeVisual {
+  const style = NODE_STYLE[node.tier]
+  const pos = toSphere(node.lat, node.lng, radius + 0.04)
+
+  const group = new THREE.Group()
+
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: NODE_COLORS.glow,
+    transparent: true,
+    opacity: style.baseGlow,
+    depthWrite: false,
+  })
+
+  const coreMat = new THREE.MeshBasicMaterial({
+    color: NODE_COLORS.core,
+    transparent: true,
+    opacity: 1,
+    depthWrite: false,
+  })
+
+  const hiMat = new THREE.MeshBasicMaterial({
+    color: NODE_COLORS.highlight,
+    transparent: true,
+    opacity: 0.78,
+    depthWrite: false,
+  })
+
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(style.glow, 14, 14), glowMat)
+  const core = new THREE.Mesh(new THREE.SphereGeometry(style.core, 16, 16), coreMat)
+  const highlight = new THREE.Mesh(new THREE.SphereGeometry(style.hi, 12, 12), hiMat)
+
+  glow.position.copy(pos)
+  core.position.copy(pos)
+  highlight.position.copy(pos)
+
+  group.add(glow, core, highlight)
+
+  return { id: node.id, tier: node.tier, group, glow, core, highlight, pos, glowMat, hiMat }
 }
 
-export function buildNodes(nodes: NodeDef[], R: number): NodeObject[] {
-  const result: NodeObject[] = []
+export function setNodeState(
+  node: NodeVisual,
+  state: 'idle' | 'send' | 'receive',
+  t: number,
+) {
+  const base = NODE_STYLE[node.tier].baseGlow
 
-  for (const node of nodes) {
-    const cfg = TIER_CONFIG[node.tier]
-    const pos = toSphere(node.lat, node.lng, R + 0.038)
-
-    // Halo — large but very soft, max 8-12% alpha
-    const haloGeom = new THREE.SphereGeometry(cfg.haloR, 16, 16)
-    const haloMat = new THREE.MeshBasicMaterial({
-      color: PALETTE.nodeCore,
-      transparent: true,
-      opacity: node.tier === 1 ? 0.10 : node.tier === 2 ? 0.07 : 0.05,
-      depthWrite: false,
-    })
-    const halo = new THREE.Mesh(haloGeom, haloMat)
-    halo.position.copy(pos)
-
-    // Core — dark, compact, precise
-    const coreGeom = new THREE.SphereGeometry(cfg.coreR, 16, 16)
-    const coreMat = new THREE.MeshBasicMaterial({
-      color: PALETTE.nodeCore,
-      depthWrite: true,
-    })
-    const core = new THREE.Mesh(coreGeom, coreMat)
-    core.position.copy(pos)
-
-    // Highlight — tiny bright center, tier 1 only (clear), tier 2 subtle
-    let highlight: THREE.Mesh | null = null
-    if (cfg.hlR > 0) {
-      const hlGeom = new THREE.SphereGeometry(cfg.hlR, 8, 8)
-      const hlMat = new THREE.MeshBasicMaterial({
-        color: PALETTE.nodeHighlight,
-        transparent: true,
-        opacity: node.tier === 1 ? 0.82 : 0.45,
-        depthWrite: false,
-      })
-      highlight = new THREE.Mesh(hlGeom, hlMat)
-      // Offset highlight toward viewer for micro-specular feel
-      const offset = pos.clone().normalize().multiplyScalar(cfg.coreR * 0.55)
-      highlight.position.copy(pos).add(offset)
-    }
-
-    result.push({ halo, core, highlight, haloMat, tier: node.tier, pos })
+  if (state === 'idle') {
+    node.glowMat.opacity = base + Math.sin(t * 0.001 + node.id.length) * 0.008
+    node.hiMat.opacity = node.tier === 'primary' ? 0.82 : 0.68
+    return
   }
 
-  return result
+  if (state === 'send') {
+    node.glowMat.opacity = base + 0.12
+    node.hiMat.opacity = 0.95
+    return
+  }
+
+  if (state === 'receive') {
+    node.glowMat.opacity = base + 0.18
+    node.hiMat.opacity = 1.0
+  }
+}
+
+// Build all nodes
+export function buildNodes(nodes: NodeDef[], R: number): NodeVisual[] {
+  return nodes.map(node => createNodeVisual(node, R))
 }

@@ -7,7 +7,7 @@ import { toSphere } from './globe/utils'
 import { buildLandMeshes, buildCoastlines, buildBorders, buildGraticule } from './globe/geo'
 import { buildInnerAtmosphere, buildOuterHalo } from './globe/atmosphere'
 import { buildRoutes, type RouteObject } from './globe/routes'
-import { buildNodes, type NodeObject } from './globe/nodes'
+import { buildNodes, setNodeState, type NodeVisual } from './globe/nodes'
 import { buildLighting } from './globe/lighting'
 import { createInteractionController } from './globe/interaction'
 
@@ -70,12 +70,9 @@ export default function PremiumGlobe({
 
     // ── Globe group ──────────────────────────────────────────────────────────
     const group = new THREE.Group()
-    // Authored hero pose: Europe/Africa/Atlantic corridor prominent
-    // Shows London, Lagos, Brussels as primary focal cluster
-    // Authored hero pose: Africa/Europe/Middle East — canonical load state
-    // ~20°E, 10°N — Europe upper-left, West Africa center-left, Middle East right
-    group.rotation.x = GLOBE_TUNING.motion.defaultRotX
-    group.rotation.y = GLOBE_TUNING.motion.defaultRotY
+    // Hero pose: canonical load state
+    group.rotation.x = GLOBE_TUNING.motion.defaultRotX  // -0.165
+    group.rotation.y = GLOBE_TUNING.motion.defaultRotY  // 0.345
     scene.add(group)
 
     // ── Lighting (scene-level, not rotating) ─────────────────────────────────
@@ -107,7 +104,7 @@ export default function PremiumGlobe({
 
     // ── Route & node state ───────────────────────────────────────────────────
     let routes: RouteObject[] = []
-    let nodeObjects: NodeObject[] = []
+    let nodeVisuals: NodeVisual[] = []
     let interactionCtrl: ReturnType<typeof createInteractionController> | null = null
 
     // ── Geo data (async) ─────────────────────────────────────────────────────
@@ -155,17 +152,13 @@ export default function PremiumGlobe({
           group.add(r.pulse)
         })
 
-        // Nodes
-        nodeObjects = buildNodes(NODES, GLOBE_TUNING.radius)
-        nodeObjects.forEach(n => {
-          disposables.push(n.halo.geometry, n.haloMat)
+        // Nodes — using new NodeVisual system
+        nodeVisuals = buildNodes(NODES, GLOBE_TUNING.radius)
+        nodeVisuals.forEach(n => {
+          disposables.push(n.glow.geometry, n.glowMat)
           disposables.push(n.core.geometry, n.core.material as THREE.Material)
-          group.add(n.halo)
-          group.add(n.core)
-          if (n.highlight) {
-            disposables.push(n.highlight.geometry, n.highlight.material as THREE.Material)
-            group.add(n.highlight)
-          }
+          disposables.push(n.highlight.geometry, n.hiMat)
+          group.add(n.group)
         })
 
         // ── Interaction ─────────────────────────────────────────────────────
@@ -221,6 +214,11 @@ export default function PremiumGlobe({
         group.rotation.x += (defaultRotX + pitchBreath - group.rotation.x) * 0.0008
       }
 
+      // ── Animate nodes using setNodeState ────────────────────────────────────
+      nodeVisuals.forEach(node => {
+        setNodeState(node, 'idle', now)
+      })
+
       // ── Route animation: progressive fidelity by device tier ────────────────
       // Routes[0] = transatlantic (hero), Routes[1] = London-Lagos (supporting)
       // Remaining routes shown only as static lines at low opacity
@@ -263,37 +261,20 @@ export default function PremiumGlobe({
           const nearEnd = Math.max(0, 1 - Math.abs(t - 0.82) / 0.18)
           if (nearEnd > 0) {
             route.pulseMat.opacity = Math.min(0.97, route.pulseMat.opacity + nearEnd * 0.30)
-            // Destination node responds to arrival — London node (idx 0 in NODES)
+
+            // During route pulse arrivals — trigger send/receive states
             if (nearEnd > 0.6 && isHero) {
-              const londonNode = nodeObjects.find(n => n.tier === 1)
-              if (londonNode) {
-                londonNode.haloMat.opacity = Math.min(0.20, londonNode.haloMat.opacity + nearEnd * 0.07)
-              }
+              // Find london node and set to receive
+              const londonNode = nodeVisuals.find(n => n.id === 'london')
+              if (londonNode) setNodeState(londonNode, 'receive', now)
+              // Near departure: lagos sends
+              const lagosNode = nodeVisuals.find(n => n.id === 'lagos')
+              if (lagosNode && t < 0.2) setNodeState(lagosNode, 'send', now)
             }
           }
         } else {
           route.pulseMat.opacity = 0
         }
-      })
-
-      // ── Node halos: subtle breathing + limb suppression ────────────────────
-      nodeObjects.forEach((node, idx) => {
-        const phase = (now * 0.00052 + idx * 1.1) % (Math.PI * 2)
-        const base = node.tier === 1 ? 0.09 : node.tier === 2 ? 0.06 : 0.04
-        const amp  = node.tier === 1 ? 0.016 : node.tier === 2 ? 0.010 : 0.007
-        let opacity = base + Math.sin(phase) * amp
-
-        // Limb suppression: project node pos through camera to detect edge proximity
-        // If node is near the sphere silhouette, reduce halo to keep edge composed
-        const nodeInView = node.pos.clone().applyQuaternion(group.quaternion)
-        const edgeDot = nodeInView.clone().normalize().dot(new THREE.Vector3(0, 0, 1))
-        // edgeDot near 0 = at limb, near 1 = facing camera
-        if (edgeDot < 0.18) {
-          const limbFade = Math.max(0, edgeDot / 0.18)
-          opacity *= limbFade * 0.5
-        }
-
-        node.haloMat.opacity = Math.max(0, opacity)
       })
 
       renderer.render(scene, camera)

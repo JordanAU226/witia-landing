@@ -22,8 +22,8 @@ export const GLOBE_TUNING = {
   // Globe dwells on Africa/Europe, sweeps toward Americas, returns
   motion: {
     // Default pose: Africa/Europe/Middle East canonical frame
-    defaultRotX: -10 * (Math.PI / 180),
-    defaultRotY: -20 * (Math.PI / 180),
+    defaultRotX: -0.165,
+    defaultRotY: 0.345,
     // Constrained sweep: ±18° — very small range, strong dwell
     sweepAmplitude: 18 * (Math.PI / 180),
     sweepPeriod: 62000,  // 62s cycle — viewer feels authorship, not animation
@@ -50,37 +50,62 @@ export const PALETTE = {
   atmosphereRim: '#dfe6f0',
 } as const
 
+// Node tier hierarchy
+export const NODE_VISUAL_TIER = {
+  london: 'primary',
+  brussels: 'secondary',
+  lagos: 'secondary',
+  'new-york': 'secondary',
+  nairobi: 'tertiary',
+  washington: 'tertiary',
+  singapore: 'tertiary',
+  birmingham: 'ambient',
+  phoenix: 'ambient',
+} as const
+
+export type NodeTier = 'primary' | 'secondary' | 'tertiary' | 'ambient'
+
+export const NODE_STYLE = {
+  primary:   { core: 0.032, glow: 0.068, hi: 0.010, baseGlow: 0.10 },
+  secondary: { core: 0.026, glow: 0.054, hi: 0.008, baseGlow: 0.075 },
+  tertiary:  { core: 0.021, glow: 0.044, hi: 0.006, baseGlow: 0.05 },
+  ambient:   { core: 0.016, glow: 0.034, hi: 0.004, baseGlow: 0.03 },
+} as const
+
+export const NODE_COLORS = {
+  core: '#315f98',
+  glow: '#8eaddc',
+  highlight: '#c8d8ef',
+}
+
 export interface NodeDef {
   id: string
   lat: number
   lng: number
-  tier: 1 | 2 | 3
+  tier: NodeTier
 }
 
 export const NODES: NodeDef[] = [
-  // Tier 1 — primary hubs (Europe cluster is the hero focal point)
-  { id: 'london',     lat: 51.5,  lng: -0.1,   tier: 1 },
-  { id: 'lagos',      lat: 6.5,   lng: 3.4,    tier: 1 },
-  { id: 'newyork',    lat: 40.7,  lng: -74.0,  tier: 1 },
-  { id: 'singapore',  lat: 1.3,   lng: 103.8,  tier: 1 },
-  // Tier 2 — meaningful secondary anchors
-  { id: 'brussels',   lat: 50.8,  lng: 4.4,    tier: 2 },
-  { id: 'nairobi',    lat: -1.3,  lng: 36.8,   tier: 2 },
-  { id: 'washington', lat: 38.9,  lng: -77.0,  tier: 2 },
-  // Tier 3 — present but quieter
-  { id: 'birmingham', lat: 52.5,  lng: -1.9,   tier: 3 },
-  { id: 'phoenix',    lat: 33.4,  lng: -112.1, tier: 3 },
+  { id: 'london',     lat: 51.5,  lng: -0.1,   tier: 'primary' },
+  { id: 'brussels',   lat: 50.8,  lng: 4.4,    tier: 'secondary' },
+  { id: 'lagos',      lat: 6.5,   lng: 3.4,    tier: 'secondary' },
+  { id: 'new-york',   lat: 40.7,  lng: -74.0,  tier: 'secondary' },
+  { id: 'nairobi',    lat: -1.3,  lng: 36.8,   tier: 'tertiary' },
+  { id: 'washington', lat: 38.9,  lng: -77.0,  tier: 'tertiary' },
+  { id: 'singapore',  lat: 1.3,   lng: 103.8,  tier: 'tertiary' },
+  { id: 'birmingham', lat: 52.5,  lng: -1.9,   tier: 'ambient' },
+  { id: 'phoenix',    lat: 33.4,  lng: -112.1, tier: 'ambient' },
 ]
 
 // Routes: transatlantic is the signature hero arc
 // Only 1-2 readable at once — hero arc + 1 supporting
 export const ROUTES: string[][] = [
-  ['london', 'newyork'],    // HERO ARC — transatlantic, visible in default pose
+  ['london', 'new-york'],   // HERO ARC — transatlantic, visible in default pose
   ['london', 'lagos'],      // supporting — UK-Africa, origin story
   ['brussels', 'nairobi'],  // EU-Africa corridor
   ['london', 'brussels'],   // European institutional
-  ['newyork', 'washington'],
+  ['new-york', 'washington'],
   ['lagos', 'nairobi'],
-  ['newyork', 'singapore'],
+  ['new-york', 'singapore'],
   ['london', 'birmingham'],
 ]
