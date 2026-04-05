@@ -275,21 +275,21 @@ export function buildCoastlines(world: Topology, R: number): THREE.LineSegments 
   return new THREE.LineSegments(geometry, material)
 }
 
-// Country borders (interior only)
+// Country borders only
 export function buildBorders(world: Topology, R: number): THREE.LineSegments {
-  const borderMesh = mesh(
-    world,
-    (world.objects as Record<string, GeometryCollection>).countries,
-    (a, b) => a !== b,
-  )
+  const countriesObject = (world.objects as Record<string, GeometryCollection>).countries
+
+  const borderMesh = mesh(world, countriesObject, (a, b) => a !== b)
 
   const positions: number[] = []
+  const r = R + GLOBE_TUNING.borderOffset
+
   for (const coord of borderMesh.coordinates) {
     for (let i = 0; i < coord.length - 1; i++) {
       const [lng1, lat1] = coord[i]
       const [lng2, lat2] = coord[i + 1]
-      const v1 = toSphere(lat1, lng1, R + GLOBE_TUNING.borderOffset)
-      const v2 = toSphere(lat2, lng2, R + GLOBE_TUNING.borderOffset)
+      const v1 = toSphere(lat1, lng1, r)
+      const v2 = toSphere(lat2, lng2, r)
       positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z)
     }
   }
@@ -299,27 +299,28 @@ export function buildBorders(world: Topology, R: number): THREE.LineSegments {
 
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.borders,
+    linewidth: 1,
     transparent: true,
-    opacity: 0.14,
+    opacity: 0.16,
+    depthWrite: false,
   })
 
   return new THREE.LineSegments(geometry, material)
 }
 
-// Graticule
 export function buildGraticule(R: number): THREE.LineSegments {
   const positions: number[] = []
   const step = 10
   const segments = 180
+  const r = R + GLOBE_TUNING.graticuleOffset
 
   for (let lng = -180; lng < 180; lng += step) {
     for (let i = 0; i < segments; i++) {
       const lat1 = -90 + (i / segments) * 180
       const lat2 = -90 + ((i + 1) / segments) * 180
-      positions.push(
-        ...toSphere(lat1, lng, R + GLOBE_TUNING.graticuleOffset).toArray(),
-        ...toSphere(lat2, lng, R + GLOBE_TUNING.graticuleOffset).toArray(),
-      )
+      const v1 = toSphere(lat1, lng, r)
+      const v2 = toSphere(lat2, lng, r)
+      positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z)
     }
   }
 
@@ -327,10 +328,9 @@ export function buildGraticule(R: number): THREE.LineSegments {
     for (let i = 0; i < segments * 2; i++) {
       const lng1 = -180 + (i / (segments * 2)) * 360
       const lng2 = -180 + ((i + 1) / (segments * 2)) * 360
-      positions.push(
-        ...toSphere(lat, lng1, R + GLOBE_TUNING.graticuleOffset).toArray(),
-        ...toSphere(lat, lng2, R + GLOBE_TUNING.graticuleOffset).toArray(),
-      )
+      const v1 = toSphere(lat, lng1, r)
+      const v2 = toSphere(lat, lng2, r)
+      positions.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z)
     }
   }
 
@@ -339,8 +339,10 @@ export function buildGraticule(R: number): THREE.LineSegments {
 
   const material = new THREE.LineBasicMaterial({
     color: PALETTE.graticule,
+    linewidth: 1,
     transparent: true,
-    opacity: 0.048,
+    opacity: 0.038,
+    depthWrite: false,
   })
 
   return new THREE.LineSegments(geometry, material)
