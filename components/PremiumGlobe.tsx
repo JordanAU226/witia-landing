@@ -206,6 +206,7 @@ export default function PremiumGlobe({
       const style = ROUTE_STYLE[strength]
       ;(route.tube.material as THREE.MeshBasicMaterial).opacity = style.core * amount
       ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = style.mid * amount
+      ;(route.haloLine.material as THREE.LineBasicMaterial).opacity = style.outer * amount
     }
 
     const setRoutePulse = (
@@ -500,9 +501,11 @@ export default function PremiumGlobe({
         runtime.routes.forEach((route) => {
           disposables.push(route.tube.geometry, route.tube.material as THREE.Material)
           disposables.push(route.glowTube.geometry, route.glowTube.material as THREE.Material)
+          disposables.push(route.haloLine.geometry, route.haloLine.material as THREE.Material)
           disposables.push(route.pulse.geometry, route.pulseMat)
-          group.add(route.tube)
+          group.add(route.haloLine)
           group.add(route.glowTube)
+          group.add(route.tube)
           group.add(route.pulse)
 
           route.waveRings.forEach((wave) => {
