@@ -33,6 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Preload geodata so globe renders without delay */}
+        <link rel="preload" href="/world-110m.json" as="fetch" crossOrigin="anonymous" />
+      </head>
       <body>{children}</body>
     </html>
   );

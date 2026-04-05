@@ -22,8 +22,8 @@ export const GLOBE_TUNING = {
   // Globe dwells on Africa/Europe, sweeps toward Americas, returns
   motion: {
     // Default pose: Africa/Europe/Middle East canonical frame
-    defaultRotX: -0.165,
-    defaultRotY: 0.345,
+    defaultRotX: -0.18,
+    defaultRotY: -0.15,  // Europe upper-left, Africa centered — matches canonical view
     // Constrained sweep: ±18° — very small range, strong dwell
     sweepAmplitude: 18 * (Math.PI / 180),
     sweepPeriod: 62000,  // 62s cycle — viewer feels authorship, not animation
