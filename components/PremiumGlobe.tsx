@@ -9,6 +9,7 @@ import { buildRoutes, type RouteObject } from './globe/routes'
 import { buildNodes, setNodeState, type NodeVisual } from './globe/nodes'
 import { buildLighting } from './globe/lighting'
 import { createInteractionController } from './globe/interaction'
+import { RippleSystem } from './globe/ripples'
 
 interface PremiumGlobeProps {
   size?: number
@@ -98,6 +99,7 @@ export default function PremiumGlobe({
 
     // ── Route & node state ───────────────────────────────────────────────────
     let routes: RouteObject[] = []
+    let rippleSystem: RippleSystem | null = null
     let nodeVisuals: NodeVisual[] = []
     let interactionCtrl: ReturnType<typeof createInteractionController> | null = null
 
@@ -114,33 +116,42 @@ export default function PremiumGlobe({
       ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = k * style.mid
     }
 
-    function setPulsePosition(route: RouteObject, travelT: number) {
-      const ptIdx = Math.min(Math.floor(travelT * route.points.length), route.points.length - 1)
-      route.pulse.position.copy(route.points[ptIdx])
+    function setWaveRings(route: RouteObject, travelT: number, routeAlpha: number, pulseStrength: number) {
+      route.waveRings.forEach(wave => {
+        const waveT = Math.max(0, Math.min(1, travelT + wave.offsetT))
+        const ptIdx = Math.min(Math.floor(waveT * route.points.length), route.points.length - 1)
+        const pos = route.points[ptIdx]
+        wave.mesh.position.copy(pos)
+
+        // Orient ring perpendicular to arc travel direction
+        const nextIdx = Math.min(ptIdx + 1, route.points.length - 1)
+        if (nextIdx !== ptIdx) {
+          const nextPos = route.points[nextIdx]
+          const dir = nextPos.clone().sub(pos).normalize()
+          wave.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
+        }
+
+        wave.mat.opacity = routeAlpha * wave.baseOpacity * pulseStrength
+      })
     }
 
-    function setPulseOpacity(route: RouteObject, opacity: number) {
-      route.pulseMat.opacity = opacity
+    function hideWaveRings(route: RouteObject) {
+      route.waveRings.forEach(wave => { wave.mat.opacity = 0 })
     }
 
     function triggerRippleOnce(beatId: string, nowMs: number) {
       if (!rippleTimers.has(beatId)) {
         rippleTimers.set(beatId, nowMs)
-      }
-    }
-
-    function updateRipples(visMap: Map<string, NodeVisual>, nowMs: number) {
-      rippleTimers.forEach((startMs, beatId) => {
-        const elapsed = nowMs - startMs
-        if (elapsed > 850) return
+        // Spawn concentric ripple rings at the destination node
         const beat = HERO_SEQUENCE.find(b => b.id === beatId)
-        if (!beat) return
-        const node = visMap.get(beat.to)
-        if (!node) return
-        const t = elapsed / 850
-        const rippleOpacity = 0.18 * Math.sin(t * Math.PI)
-        node.glowMat.opacity = NODE_STYLE[node.tier].baseGlow + rippleOpacity
-      })
+        if (beat && rippleSystem) {
+          const node = nodeVisualMap.get(beat.to)
+          if (node) {
+            // node.pos is the sphere-surface position used for glow/core mesh placement
+            rippleSystem.spawnNodeRipple(node.pos.clone(), nowMs, '#8eaddc')
+          }
+        }
+      }
     }
 
     function updateHeroSequence(
@@ -156,7 +167,7 @@ export default function PremiumGlobe({
       // Reset all routes to invisible
       rMap.forEach(route => {
         setRouteVisibility(route, 0, 'support')
-        setPulseOpacity(route, 0)
+        hideWaveRings(route)
       })
 
       // Process each beat
@@ -183,8 +194,8 @@ export default function PremiumGlobe({
           const fromNode = visMap.get(beat.from)
           if (fromNode) setNodeState(fromNode, 'send', nowMs)
           setRouteVisibility(route, 1, beat.strength)
-          setPulsePosition(route, travelT)
-          setPulseOpacity(route, beat.strength === 'hero' ? ROUTE_STYLE.hero.pulse : ROUTE_STYLE.support.pulse)
+          const pulseStrength = beat.strength === 'hero' ? ROUTE_STYLE.hero.pulse : ROUTE_STYLE.support.pulse
+          setWaveRings(route, travelT, 1, pulseStrength)
           continue
         }
 
@@ -201,8 +212,8 @@ export default function PremiumGlobe({
         setRouteVisibility(route, 1 - fadeT, beat.strength)
       }
 
-      // Update ripple animations
-      updateRipples(visMap, nowMs)
+      // Update ripple system (node arrival rings)
+      if (rippleSystem) rippleSystem.update(nowMs)
     }
 
     // ── Geo data (async) ─────────────────────────────────────────────────────
@@ -247,7 +258,15 @@ export default function PremiumGlobe({
           group.add(r.tube)
           group.add(r.glowTube)
           group.add(r.pulse)
+          // Add arc wave rings to scene
+          r.waveRings.forEach(wave => {
+            disposables.push(wave.mesh.geometry, wave.mat)
+            group.add(wave.mesh)
+          })
         })
+
+        // Ripple system for node arrival rings
+        rippleSystem = new RippleSystem(group)
 
         // Nodes
         nodeVisuals = buildNodes(NODES, GLOBE_TUNING.radius)
@@ -364,6 +383,7 @@ export default function PremiumGlobe({
       cancelAnimationFrame(rafId)
       resizeObserver.disconnect()
       if (interactionCtrl) interactionCtrl.dispose()
+      if (rippleSystem) rippleSystem.dispose()
       disposables.forEach(d => d.dispose())
       renderer.dispose()
       if (mount.contains(renderer.domElement)) {

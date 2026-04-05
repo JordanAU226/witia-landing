@@ -6,15 +6,29 @@ export interface NodeMap {
   [id: string]: { lat: number; lng: number }
 }
 
+export interface ArcWaveRing {
+  mesh: THREE.Mesh
+  mat: THREE.MeshBasicMaterial
+  offsetT: number   // trailing offset along arc (0 = leading, negative = behind)
+  baseOpacity: number
+}
+
 export interface RouteObject {
   tube: THREE.Mesh
   glowTube: THREE.Mesh
+  // Legacy pulse sphere (hidden, kept for compatibility)
   pulse: THREE.Mesh
   pulseMat: THREE.MeshBasicMaterial
+  // Arc wave rings (replaces single pulse sphere)
+  waveRings: ArcWaveRing[]
   curve: THREE.QuadraticBezierCurve3
   points: THREE.Vector3[]
   offset: number
 }
+
+// Arc wave constants
+const WAVE_OFFSETS = [0, -0.04, -0.08]    // leading ring first, trailing behind
+const WAVE_OPACITIES = [1.0, 0.55, 0.28]  // leading brightest
 
 export function buildRoutes(nodes: NodeMap, routes: string[][]): RouteObject[] {
   const result: RouteObject[] = []
@@ -61,7 +75,7 @@ export function buildRoutes(nodes: NodeMap, routes: string[][]): RouteObject[] {
     })
     const glowTube = new THREE.Mesh(glowGeom, glowMat)
 
-    // ── Pulse sphere ─────────────────────────────────────────────────────────
+    // ── Legacy pulse sphere (hidden — wave rings take over) ───────────────────
     const pulseGeom = new THREE.SphereGeometry(GLOBE_TUNING.routes.pulseRadius, 8, 8)
     const pulseMat = new THREE.MeshBasicMaterial({
       color: PALETTE.routePulse,
@@ -71,12 +85,33 @@ export function buildRoutes(nodes: NodeMap, routes: string[][]): RouteObject[] {
     })
     const pulse = new THREE.Mesh(pulseGeom, pulseMat)
     pulse.position.copy(points[0])
+    // Keep pulse always hidden — wave rings do the job
+    pulseMat.opacity = 0
+
+    // ── Arc wave rings ────────────────────────────────────────────────────────
+    // Created without group reference — caller adds them to scene
+    const waveRings: ArcWaveRing[] = WAVE_OFFSETS.map((offset, i) => {
+      const ringRadius = GLOBE_TUNING.routes.pulseRadius * 1.2
+      const geo = new THREE.RingGeometry(0.001, ringRadius, 24)
+      const mat = new THREE.MeshBasicMaterial({
+        color: PALETTE.routePulse,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      })
+      const mesh = new THREE.Mesh(geo, mat)
+      mesh.position.copy(points[0])
+      return { mesh, mat, offsetT: offset, baseOpacity: WAVE_OPACITIES[i] }
+    })
 
     result.push({
       tube,
       glowTube,
       pulse,
       pulseMat,
+      waveRings,
       curve,
       points,
       offset: idx * 1100,
