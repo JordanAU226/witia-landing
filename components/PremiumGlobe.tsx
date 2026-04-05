@@ -104,7 +104,8 @@ export default function PremiumGlobe({
     let interactionCtrl: ReturnType<typeof createInteractionController> | null = null
 
     // ── Hero sequence state ──────────────────────────────────────────────────
-    let heroStartedAt = -1
+    // Start immediately on mount — don't wait for geodata
+    let heroStartedAt = Date.now()
     const rippleTimers = new Map<string, number>()
     let nodeVisualMap = new Map<string, NodeVisual>()
     let routeMap = new Map<string, RouteObject>()
@@ -293,9 +294,6 @@ export default function PremiumGlobe({
         routes.forEach((r, i) => {
           if (routeIds[i]) routeMap.set(routeIds[i], r)
         })
-
-        // Start hero sequence timer
-        heroStartedAt = Date.now()
 
         // ── Interaction ─────────────────────────────────────────────────────
         if (interactive && !prefersReducedMotion) {
