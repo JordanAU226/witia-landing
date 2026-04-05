@@ -526,12 +526,8 @@ export default function PremiumGlobe({
 
         runtime.nodeVisualMap = new Map(runtime.nodeVisuals.map((node) => [node.id, node]))
 
-        runtime.routeMap = new Map<string, RouteObject>()
-        runtime.routes.forEach((route, index) => {
-          const config = ROUTES[index] as { id?: string; from: string; to: string } | undefined
-          if (!config) return
-          runtime.routeMap.set(getRouteIdFromConfig(config), route)
-        })
+        // Build from route.id directly — routes are now self-describing
+        runtime.routeMap = new Map(runtime.routes.map((route) => [route.id, route]))
 
         for (const beat of HERO_SEQUENCE) {
           if (!runtime.routeMap.has(beat.id)) {
