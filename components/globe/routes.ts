@@ -30,12 +30,13 @@ export interface RouteObject {
 const WAVE_OFFSETS = [0, -0.04, -0.08]    // leading ring first, trailing behind
 const WAVE_OPACITIES = [1.0, 0.55, 0.28]  // leading brightest
 
-export function buildRoutes(nodes: NodeMap, routes: string[][]): RouteObject[] {
+export function buildRoutes(nodes: NodeMap, routes: ({ id: string; from: string; to: string } | string[])[]): RouteObject[] {
   const result: RouteObject[] = []
   const R = GLOBE_TUNING.radius
 
   routes.forEach((pair, idx) => {
-    const [idA, idB] = pair
+    const idA = Array.isArray(pair) ? pair[0] : pair.from
+    const idB = Array.isArray(pair) ? pair[1] : pair.to
     const nodeA = nodes[idA]
     const nodeB = nodes[idB]
     if (!nodeA || !nodeB) return

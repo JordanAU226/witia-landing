@@ -97,13 +97,13 @@ export const NODES: NodeDef[] = [
   { id: 'phoenix',    lat: 33.4,  lng: -112.1, tier: 'ambient' },
 ]
 
-export const ROUTES: string[][] = [
-  ['london', 'brussels'],      // beat 1 — London-Brussels support
-  ['brussels', 'lagos'],       // beat 2 — Brussels-Lagos hero
-  ['lagos', 'nairobi'],        // beat 3 — Lagos-Nairobi support
-  ['nairobi', 'new-york'],     // beat 4 — Nairobi-NewYork hero (global)
-  ['london', 'new-york'],      // background after 10s
-  ['london', 'lagos'],         // background
+export const ROUTES: { id: string; from: string; to: string }[] = [
+  { id: 'london-brussels',  from: 'london',  to: 'brussels'  },
+  { id: 'brussels-lagos',   from: 'brussels', to: 'lagos'    },
+  { id: 'lagos-nairobi',    from: 'lagos',   to: 'nairobi'   },
+  { id: 'nairobi-new-york', from: 'nairobi', to: 'new-york'  },
+  { id: 'london-new-york',  from: 'london',  to: 'new-york'  },
+  { id: 'london-lagos',     from: 'london',  to: 'lagos'     },
 ]
 
 export const HERO_SEQUENCE = [

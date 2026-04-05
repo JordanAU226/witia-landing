@@ -2,13 +2,20 @@
 
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { GLOBE_TUNING, PALETTE, NODES, ROUTES, HERO_SEQUENCE, ROUTE_STYLE, HERO_MOTION, NODE_STYLE } from './globe/tuning'
+import {
+  GLOBE_TUNING,
+  PALETTE,
+  NODES,
+  ROUTES,
+  HERO_SEQUENCE,
+  ROUTE_STYLE,
+  HERO_MOTION,
+} from './globe/tuning'
 import { buildLandMeshes, buildCoastlines, buildBorders, buildGraticule } from './globe/geo'
 import { buildInnerAtmosphere, buildOuterHalo } from './globe/atmosphere'
 import { buildRoutes, type RouteObject } from './globe/routes'
 import { buildNodes, setNodeState, type NodeVisual } from './globe/nodes'
 import { buildLighting } from './globe/lighting'
-import { createInteractionController } from './globe/interaction'
 import { RippleSystem } from './globe/ripples'
 
 interface PremiumGlobeProps {
@@ -16,6 +23,85 @@ interface PremiumGlobeProps {
   quality?: 'auto' | 'high' | 'medium'
   interactive?: boolean
   className?: string
+}
+
+type DisposableLike = { dispose(): void }
+
+type RuntimeState = {
+  assetsReady: boolean
+  heroStartedAt: number | null
+  pausedAccumMs: number
+  hiddenAt: number | null
+  currentCycle: number
+  triggeredRipples: Set<string>
+  nodeVisualMap: Map<string, NodeVisual>
+  routeMap: Map<string, RouteObject>
+  routes: RouteObject[]
+  nodeVisuals: NodeVisual[]
+  rippleSystem: RippleSystem | null
+  graticuleMaterial: THREE.LineBasicMaterial | null
+  pointerTargetX: number
+  pointerTargetY: number
+  pointerCurrentX: number
+  pointerCurrentY: number
+}
+
+const HERO_SEQUENCE_DURATION =
+  HERO_SEQUENCE.reduce((max, beat) => {
+    const end =
+      beat.startMs +
+      beat.launchMs +
+      beat.travelMs +
+      beat.arrivalMs +
+      beat.cooldownMs
+    return Math.max(max, end)
+  }, 0) + 1400
+
+function clamp01(x: number) {
+  return Math.max(0, Math.min(1, x))
+}
+
+function getProfile(
+  viewportWidth: number,
+  quality: PremiumGlobeProps['quality'],
+  requestedSize: number,
+  mount: HTMLDivElement,
+) {
+  const isMobile = viewportWidth <= 600
+  const isTablet = viewportWidth > 600 && viewportWidth <= 1024
+
+  if (quality === 'high') {
+    return {
+      isMobile,
+      isTablet,
+      renderSize: Math.max(320, Math.min(requestedSize, mount.clientWidth || requestedSize)),
+      sphereSegments: 96,
+      pixelRatioCap: 2,
+    }
+  }
+
+  if (quality === 'medium') {
+    return {
+      isMobile,
+      isTablet,
+      renderSize: isMobile ? 280 : isTablet ? 380 : Math.max(320, Math.min(requestedSize, mount.clientWidth || requestedSize)),
+      sphereSegments: isMobile ? 40 : isTablet ? 56 : 72,
+      pixelRatioCap: isMobile ? 1.5 : 1.75,
+    }
+  }
+
+  // auto
+  return {
+    isMobile,
+    isTablet,
+    renderSize: isMobile ? 280 : isTablet ? 380 : Math.max(320, Math.min(requestedSize, mount.clientWidth || requestedSize)),
+    sphereSegments: isMobile ? 32 : isTablet ? 48 : 64,
+    pixelRatioCap: isMobile ? 1.5 : 2,
+  }
+}
+
+function getRouteIdFromConfig(config: { id?: string; from: string; to: string }) {
+  return config.id ?? `${config.from}-${config.to}`
 }
 
 export default function PremiumGlobe({
@@ -30,54 +116,61 @@ export default function PremiumGlobe({
     const mount = mountRef.current
     if (!mount) return
 
-    // ── Detect environment ──────────────────────────────────────────────────
-    const isMobile = window.innerWidth <= 600
-    const isTablet = window.innerWidth > 600 && window.innerWidth <= 1024
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let disposed = false
+    let rafId = 0
 
-    // Progressive fidelity: desktop full, tablet reduced, mobile minimal
-    const renderSize = isMobile ? 280 : isTablet ? 380 : size
-    // Sphere segments by device tier
-    const sphereSegments = isMobile ? 32 : isTablet ? 48 : 64
+    const runtime: RuntimeState = {
+      assetsReady: false,
+      heroStartedAt: null,
+      pausedAccumMs: 0,
+      hiddenAt: null,
+      currentCycle: -1,
+      triggeredRipples: new Set<string>(),
+      nodeVisualMap: new Map<string, NodeVisual>(),
+      routeMap: new Map<string, RouteObject>(),
+      routes: [],
+      nodeVisuals: [],
+      rippleSystem: null,
+      graticuleMaterial: null,
+      pointerTargetX: 0,
+      pointerTargetY: 0,
+      pointerCurrentX: 0,
+      pointerCurrentY: 0,
+    }
 
-    // ── Dispose registry ────────────────────────────────────────────────────
-    const disposables: { dispose(): void }[] = []
+    const reduceMotionMQ = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let prefersReducedMotion = reduceMotionMQ.matches
 
-    // ── Renderer ─────────────────────────────────────────────────────────────
-    const pixelRatio = isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2)
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-    })
-    renderer.setPixelRatio(pixelRatio)
-    const isSmallDevice = isMobile || isTablet
-    renderer.setSize(isSmallDevice ? renderSize : mount.clientWidth, isSmallDevice ? renderSize : mount.clientHeight)
+    const disposables: DisposableLike[] = []
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.0
     renderer.setClearColor(0x000000, 0)
+
+    const initialProfile = getProfile(window.innerWidth, quality, size, mount)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, initialProfile.pixelRatioCap))
+    renderer.setSize(initialProfile.renderSize, initialProfile.renderSize)
     mount.appendChild(renderer.domElement)
 
-    // ── Scene & camera ───────────────────────────────────────────────────────
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(
-      34,
-      mount.clientWidth / mount.clientHeight,
-      0.1,
-      100,
-    )
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100)
     camera.position.z = 8.5
 
-    // ── Globe group ──────────────────────────────────────────────────────────
     const group = new THREE.Group()
     group.rotation.x = GLOBE_TUNING.motion.defaultRotX
     group.rotation.y = GLOBE_TUNING.motion.defaultRotY
     scene.add(group)
 
-    // ── Lighting ─────────────────────────────────────────────────────────────
     const lights = buildLighting()
-    lights.forEach(l => scene.add(l))
+    lights.forEach((light) => scene.add(light))
 
-    // ── Base sphere ──────────────────────────────────────────────────────────
-    const sphereGeom = new THREE.SphereGeometry(GLOBE_TUNING.radius, sphereSegments, sphereSegments)
-    disposables.push(sphereGeom)
+    const sphereGeom = new THREE.SphereGeometry(
+      GLOBE_TUNING.radius,
+      initialProfile.sphereSegments,
+      initialProfile.sphereSegments,
+    )
     const sphereMat = new THREE.MeshPhysicalMaterial({
       color: PALETTE.oceanBase,
       roughness: 0.92,
@@ -85,11 +178,10 @@ export default function PremiumGlobe({
       clearcoat: 0.04,
       clearcoatRoughness: 0.94,
     })
-    disposables.push(sphereMat)
+    disposables.push(sphereGeom, sphereMat)
     const sphere = new THREE.Mesh(sphereGeom, sphereMat)
     group.add(sphere)
 
-    // ── Atmosphere shells ────────────────────────────────────────────────────
     const innerAtmo = buildInnerAtmosphere(GLOBE_TUNING)
     const outerHalo = buildOuterHalo(GLOBE_TUNING)
     disposables.push(innerAtmo.geometry, innerAtmo.material as THREE.Material)
@@ -97,298 +189,366 @@ export default function PremiumGlobe({
     scene.add(innerAtmo)
     scene.add(outerHalo)
 
-    // ── Route & node state ───────────────────────────────────────────────────
-    let routes: RouteObject[] = []
-    let rippleSystem: RippleSystem | null = null
-    let nodeVisuals: NodeVisual[] = []
-    let interactionCtrl: ReturnType<typeof createInteractionController> | null = null
-
-    // ── Hero sequence state ──────────────────────────────────────────────────
-    // Start immediately on mount — don't wait for geodata
-    let heroStartedAt = Date.now()
-    const rippleTimers = new Map<string, number>()
-    let nodeVisualMap = new Map<string, NodeVisual>()
-    let routeMap = new Map<string, RouteObject>()
-
-    // ── Helper functions ─────────────────────────────────────────────────────
-    function setRouteVisibility(route: RouteObject, k: number, strength: 'hero' | 'support') {
-      const style = ROUTE_STYLE[strength]
-      ;(route.tube.material as THREE.MeshBasicMaterial).opacity = k * style.core
-      ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = k * style.mid
+    const applyRendererSize = () => {
+      if (disposed) return
+      const profile = getProfile(window.innerWidth, quality, size, mount)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, profile.pixelRatioCap))
+      renderer.setSize(profile.renderSize, profile.renderSize)
+      camera.aspect = 1
+      camera.updateProjectionMatrix()
     }
 
-    function setWaveRings(route: RouteObject, travelT: number, routeAlpha: number, pulseStrength: number) {
-      route.waveRings.forEach(wave => {
-        const waveT = Math.max(0, Math.min(1, travelT + wave.offsetT))
-        const ptIdx = Math.min(Math.floor(waveT * route.points.length), route.points.length - 1)
-        const pos = route.points[ptIdx]
+    const setRouteVisibility = (
+      route: RouteObject,
+      amount: number,
+      strength: 'hero' | 'support',
+    ) => {
+      const style = ROUTE_STYLE[strength]
+      ;(route.tube.material as THREE.MeshBasicMaterial).opacity = style.core * amount
+      ;(route.glowTube.material as THREE.MeshBasicMaterial).opacity = style.mid * amount
+    }
+
+    const setRoutePulse = (
+      route: RouteObject,
+      travelT: number,
+      strength: 'hero' | 'support',
+    ) => {
+      const style = ROUTE_STYLE[strength]
+      const idx = Math.min(
+        Math.floor(travelT * (route.points.length - 1)),
+        route.points.length - 1,
+      )
+
+      route.pulse.position.copy(route.points[idx])
+
+      const edgeFade =
+        travelT < 0.08
+          ? travelT / 0.08
+          : travelT > 0.92
+          ? (1 - travelT) / 0.08
+          : 1
+
+      route.pulseMat.opacity = style.pulse * edgeFade
+
+      route.waveRings.forEach((wave) => {
+        const waveT = clamp01(travelT + wave.offsetT)
+        const waveIdx = Math.min(
+          Math.floor(waveT * (route.points.length - 1)),
+          route.points.length - 1,
+        )
+        const pos = route.points[waveIdx]
         wave.mesh.position.copy(pos)
 
-        // Orient ring perpendicular to arc travel direction
-        const nextIdx = Math.min(ptIdx + 1, route.points.length - 1)
-        if (nextIdx !== ptIdx) {
+        const nextIdx = Math.min(waveIdx + 1, route.points.length - 1)
+        if (nextIdx > waveIdx) {
           const nextPos = route.points[nextIdx]
           const dir = nextPos.clone().sub(pos).normalize()
           wave.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir)
         }
 
-        wave.mat.opacity = routeAlpha * wave.baseOpacity * pulseStrength
+        wave.mat.opacity = wave.baseOpacity * style.pulse
       })
     }
 
-    function hideWaveRings(route: RouteObject) {
-      route.waveRings.forEach(wave => { wave.mat.opacity = 0 })
+    const hideRoutePulse = (route: RouteObject) => {
+      route.pulseMat.opacity = 0
+      route.waveRings.forEach((wave) => { wave.mat.opacity = 0 })
     }
 
-    function triggerRippleOnce(beatId: string, nowMs: number) {
-      if (!rippleTimers.has(beatId)) {
-        rippleTimers.set(beatId, nowMs)
-        // Spawn concentric ripple rings at the destination node
-        const beat = HERO_SEQUENCE.find(b => b.id === beatId)
-        if (beat && rippleSystem) {
-          const node = nodeVisualMap.get(beat.to)
-          if (node) {
-            // node.pos is the sphere-surface position used for glow/core mesh placement
-            rippleSystem.spawnNodeRipple(node.pos.clone(), nowMs, '#8eaddc')
-          }
-        }
-      }
-    }
-
-    function updateHeroSequence(
-      nowMs: number,
-      visMap: Map<string, NodeVisual>,
-      rMap: Map<string, RouteObject>,
-    ) {
-      const t = nowMs - heroStartedAt
-
-      // Reset all nodes to idle
-      visMap.forEach(node => setNodeState(node, 'idle', nowMs))
-
-      // Reset all routes to invisible
-      rMap.forEach(route => {
+    const resetVisualState = (nowMs: number) => {
+      runtime.nodeVisualMap.forEach((node) => setNodeState(node, 'idle', nowMs))
+      runtime.routeMap.forEach((route) => {
         setRouteVisibility(route, 0, 'support')
-        hideWaveRings(route)
+        hideRoutePulse(route)
       })
+    }
 
-      // Process each beat
+    const getEffectiveHeroElapsed = (nowMs: number) => {
+      if (runtime.heroStartedAt === null) return 0
+      return nowMs - runtime.heroStartedAt - runtime.pausedAccumMs
+    }
+
+    const triggerRippleOnce = (beatId: string, cycleIndex: number, nowMs: number) => {
+      const key = `${cycleIndex}:${beatId}`
+      if (runtime.triggeredRipples.has(key)) return
+      runtime.triggeredRipples.add(key)
+
+      const beat = HERO_SEQUENCE.find((b) => b.id === beatId)
+      if (!beat || !runtime.rippleSystem) return
+
+      const node = runtime.nodeVisualMap.get(beat.to)
+      if (!node) return
+
+      runtime.rippleSystem.spawnNodeRipple(node.pos.clone(), nowMs, '#8eaddc')
+    }
+
+    const updateHeroSequence = (nowMs: number) => {
+      if (!runtime.assetsReady || runtime.heroStartedAt === null) return
+
+      const elapsed = getEffectiveHeroElapsed(nowMs)
+      const cycleIndex = Math.floor(elapsed / HERO_SEQUENCE_DURATION)
+      const t = elapsed % HERO_SEQUENCE_DURATION
+
+      if (cycleIndex !== runtime.currentCycle) {
+        runtime.currentCycle = cycleIndex
+        runtime.triggeredRipples.clear()
+      }
+
+      resetVisualState(nowMs)
+
+      let hasActiveBeat = false
+
       for (const beat of HERO_SEQUENCE) {
         const local = t - beat.startMs
         if (local < 0) continue
 
-        const route = rMap.get(beat.id)
+        const route = runtime.routeMap.get(beat.id)
         if (!route) continue
 
         const total = beat.launchMs + beat.travelMs + beat.arrivalMs + beat.cooldownMs
         if (local > total) continue
 
+        hasActiveBeat = true
+
+        const fromNode = runtime.nodeVisualMap.get(beat.from)
+        const toNode = runtime.nodeVisualMap.get(beat.to)
+
         if (local <= beat.launchMs) {
-          const k = local / beat.launchMs
-          const fromNode = visMap.get(beat.from)
+          const k = clamp01(local / beat.launchMs)
           if (fromNode) setNodeState(fromNode, 'send', nowMs)
           setRouteVisibility(route, k, beat.strength)
           continue
         }
 
         if (local <= beat.launchMs + beat.travelMs) {
-          const travelT = (local - beat.launchMs) / beat.travelMs
-          const fromNode = visMap.get(beat.from)
+          const travelT = clamp01((local - beat.launchMs) / beat.travelMs)
           if (fromNode) setNodeState(fromNode, 'send', nowMs)
           setRouteVisibility(route, 1, beat.strength)
-          const pulseStrength = beat.strength === 'hero' ? ROUTE_STYLE.hero.pulse : ROUTE_STYLE.support.pulse
-          setWaveRings(route, travelT, 1, pulseStrength)
+          setRoutePulse(route, travelT, beat.strength)
           continue
         }
 
         if (local <= beat.launchMs + beat.travelMs + beat.arrivalMs) {
-          const toNode = visMap.get(beat.to)
           if (toNode) setNodeState(toNode, 'receive', nowMs)
           setRouteVisibility(route, 1, beat.strength)
-          triggerRippleOnce(beat.id, nowMs)
+          hideRoutePulse(route)
+          triggerRippleOnce(beat.id, cycleIndex, nowMs)
           continue
         }
 
-        // Cooldown fade
-        const fadeT = (local - beat.launchMs - beat.travelMs - beat.arrivalMs) / beat.cooldownMs
+        const fadeT = clamp01(
+          (local - beat.launchMs - beat.travelMs - beat.arrivalMs) / beat.cooldownMs,
+        )
         setRouteVisibility(route, 1 - fadeT, beat.strength)
+        hideRoutePulse(route)
       }
 
-      // Update ripple system (node arrival rings)
-      if (rippleSystem) rippleSystem.update(nowMs)
+      if (runtime.graticuleMaterial) {
+        const targetOpacity = hasActiveBeat ? 0.018 : 0.024
+        runtime.graticuleMaterial.opacity +=
+          (targetOpacity - runtime.graticuleMaterial.opacity) * 0.08
+      }
+
+      runtime.rippleSystem?.update(nowMs)
     }
 
-    // ── Geo data (async) ─────────────────────────────────────────────────────
+    const getBaseRotation = (nowMs: number) => {
+      const { defaultRotX, defaultRotY, sweepAmplitude, sweepPeriod } = GLOBE_TUNING.motion
+
+      if (prefersReducedMotion || runtime.heroStartedAt === null) {
+        return { x: defaultRotX, y: defaultRotY }
+      }
+
+      const elapsed = getEffectiveHeroElapsed(nowMs)
+      const isInHeroSequence = elapsed < 10000
+
+      if (isInHeroSequence) {
+        const { idleYawAmplitude, idlePitchAmplitude, idlePeriodMs } = HERO_MOTION
+        return {
+          y: defaultRotY + idleYawAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 2),
+          x: defaultRotX + idlePitchAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 1.3),
+        }
+      }
+
+      const sweepT = (elapsed % sweepPeriod) / sweepPeriod
+      const rawSin = Math.sin(sweepT * Math.PI * 2)
+      const biasedSweep = Math.sign(rawSin) * Math.pow(Math.abs(rawSin), 2.2)
+
+      return {
+        y: defaultRotY + sweepAmplitude * biasedSweep * 0.65,
+        x: defaultRotX + (1.2 * Math.PI / 180) * Math.sin(nowMs * 0.000065),
+      }
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!interactive || prefersReducedMotion) return
+      const profile = getProfile(window.innerWidth, quality, size, mount)
+      if (profile.isMobile) return
+
+      const rect = renderer.domElement.getBoundingClientRect()
+      const nx = (event.clientX - rect.left) / rect.width - 0.5
+      const ny = (event.clientY - rect.top) / rect.height - 0.5
+
+      runtime.pointerTargetY = nx * 0.055
+      runtime.pointerTargetX = -ny * 0.028
+    }
+
+    const onPointerLeave = () => {
+      runtime.pointerTargetX = 0
+      runtime.pointerTargetY = 0
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        runtime.hiddenAt = performance.now()
+      } else if (runtime.hiddenAt !== null) {
+        runtime.pausedAccumMs += performance.now() - runtime.hiddenAt
+        runtime.hiddenAt = null
+      }
+    }
+
+    const onReducedMotionChange = (event: MediaQueryListEvent) => {
+      prefersReducedMotion = event.matches
+    }
+
+    renderer.domElement.addEventListener('pointermove', onPointerMove)
+    renderer.domElement.addEventListener('pointerleave', onPointerLeave)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    reduceMotionMQ.addEventListener('change', onReducedMotionChange)
+
     const abortCtrl = new AbortController()
 
     fetch('/world-110m.json', { signal: abortCtrl.signal })
-      .then(r => r.json())
-      .then(world => {
-        // Land meshes
-        const landMeshes = buildLandMeshes(world, GLOBE_TUNING.radius)
-        landMeshes.forEach(m => {
-          disposables.push(m.geometry)
-          group.add(m)
-        })
-        if (landMeshes.length > 0) disposables.push(landMeshes[0].material as THREE.Material)
+      .then((r) => r.json())
+      .then((world) => {
+        if (disposed) return
 
-        // Coastlines
+        const landMeshes = buildLandMeshes(world, GLOBE_TUNING.radius)
+        landMeshes.forEach((mesh) => {
+          disposables.push(mesh.geometry)
+          group.add(mesh)
+        })
+        if (landMeshes.length > 0) {
+          disposables.push(landMeshes[0].material as THREE.Material)
+        }
+
         const coastlines = buildCoastlines(world, GLOBE_TUNING.radius)
         disposables.push(coastlines.geometry, coastlines.material as THREE.Material)
         group.add(coastlines)
 
-        // Borders
         const borders = buildBorders(world, GLOBE_TUNING.radius)
         disposables.push(borders.geometry, borders.material as THREE.Material)
         group.add(borders)
 
-        // Graticule
         const graticule = buildGraticule(GLOBE_TUNING.radius)
+        runtime.graticuleMaterial = graticule.material as THREE.LineBasicMaterial
+        runtime.graticuleMaterial.opacity = 0.024
         disposables.push(graticule.geometry, graticule.material as THREE.Material)
         group.add(graticule)
 
-        // ── Network overlay ─────────────────────────────────────────────────
         const nodeMap: Record<string, { lat: number; lng: number }> = {}
-        NODES.forEach(n => { nodeMap[n.id] = { lat: n.lat, lng: n.lng } })
+        NODES.forEach((n) => { nodeMap[n.id] = { lat: n.lat, lng: n.lng } })
 
-        // Routes
-        routes = buildRoutes(nodeMap, ROUTES)
-        routes.forEach(r => {
-          disposables.push(r.tube.geometry, r.tube.material as THREE.Material)
-          disposables.push(r.glowTube.geometry, r.glowTube.material as THREE.Material)
-          disposables.push(r.pulse.geometry, r.pulseMat)
-          group.add(r.tube)
-          group.add(r.glowTube)
-          group.add(r.pulse)
-          // Add arc wave rings to scene
-          r.waveRings.forEach(wave => {
+        runtime.routes = buildRoutes(nodeMap, ROUTES)
+        runtime.routes.forEach((route) => {
+          disposables.push(route.tube.geometry, route.tube.material as THREE.Material)
+          disposables.push(route.glowTube.geometry, route.glowTube.material as THREE.Material)
+          disposables.push(route.pulse.geometry, route.pulseMat)
+          group.add(route.tube)
+          group.add(route.glowTube)
+          group.add(route.pulse)
+
+          route.waveRings.forEach((wave) => {
             disposables.push(wave.mesh.geometry, wave.mat)
             group.add(wave.mesh)
           })
         })
 
-        // Ripple system for node arrival rings
-        rippleSystem = new RippleSystem(group)
+        runtime.rippleSystem = new RippleSystem(group)
 
-        // Nodes
-        nodeVisuals = buildNodes(NODES, GLOBE_TUNING.radius)
-        nodeVisuals.forEach(n => {
-          disposables.push(n.glow.geometry, n.glowMat)
-          disposables.push(n.core.geometry, n.core.material as THREE.Material)
-          disposables.push(n.highlight.geometry, n.hiMat)
-          group.add(n.group)
+        runtime.nodeVisuals = buildNodes(NODES, GLOBE_TUNING.radius)
+        runtime.nodeVisuals.forEach((node) => {
+          disposables.push(node.glow.geometry, node.glowMat)
+          disposables.push(node.core.geometry, node.core.material as THREE.Material)
+          disposables.push(node.highlight.geometry, node.hiMat)
+          group.add(node.group)
         })
 
-        // ── Build lookup maps ───────────────────────────────────────────────
-        nodeVisualMap = new Map<string, NodeVisual>()
-        nodeVisuals.forEach(n => nodeVisualMap.set(n.id, n))
+        runtime.nodeVisualMap = new Map(runtime.nodeVisuals.map((node) => [node.id, node]))
 
-        routeMap = new Map<string, RouteObject>()
-        const routeIds = [
-          'london-brussels',
-          'brussels-lagos',
-          'lagos-nairobi',
-          'nairobi-new-york',
-          'london-new-york',
-          'london-lagos',
-        ]
-        routes.forEach((r, i) => {
-          if (routeIds[i]) routeMap.set(routeIds[i], r)
+        runtime.routeMap = new Map<string, RouteObject>()
+        runtime.routes.forEach((route, index) => {
+          const config = ROUTES[index] as { id?: string; from: string; to: string } | undefined
+          if (!config) return
+          runtime.routeMap.set(getRouteIdFromConfig(config), route)
         })
 
-        // ── Interaction ─────────────────────────────────────────────────────
-        if (interactive && !prefersReducedMotion) {
-          interactionCtrl = createInteractionController(group, renderer.domElement)
-        }
-      })
-      .catch(err => {
-        if (err.name !== 'AbortError') console.error('Globe geo fetch failed:', err)
-      })
-
-    // ── Animation loop ───────────────────────────────────────────────────────
-    let rafId: number
-
-    function animate() {
-      rafId = requestAnimationFrame(animate)
-
-      const nowMs = Date.now()
-
-      // ── Globe motion ────────────────────────────────────────────────────────
-      const { defaultRotY, defaultRotX, sweepAmplitude, sweepPeriod } = GLOBE_TUNING.motion
-
-      if (prefersReducedMotion) {
-        group.rotation.y = defaultRotY
-        group.rotation.x = defaultRotX
-      } else if (heroStartedAt > 0) {
-        const elapsed = nowMs - heroStartedAt
-        const isInHeroSequence = elapsed < 10000
-
-        if (isInHeroSequence) {
-          // Nearly static during the 10s authored narrative — only micro drift
-          const { idleYawAmplitude, idlePitchAmplitude, idlePeriodMs } = HERO_MOTION
-          const microYaw = idleYawAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 2)
-          const microPitch = idlePitchAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 1.3)
-          group.rotation.y = defaultRotY + microYaw
-          group.rotation.x = defaultRotX + microPitch
-        } else {
-          // After 10s: slow biased drift toward Americas
-          const sweepT = (nowMs % sweepPeriod) / sweepPeriod
-          const rawSin = Math.sin(sweepT * Math.PI * 2)
-          const biasedSweep = Math.sign(rawSin) * Math.pow(Math.abs(rawSin), 2.2)
-          const sweepAngle = sweepAmplitude * biasedSweep * 0.65
-          const pitchBreath = (1.2 * Math.PI / 180) * Math.sin(nowMs * 0.000065)
-
-          if (interactionCtrl) {
-            interactionCtrl.update()
-          } else {
-            group.rotation.y += (defaultRotY + sweepAngle - group.rotation.y) * 0.0008
-            group.rotation.x += (defaultRotX + pitchBreath - group.rotation.x) * 0.0008
+        for (const beat of HERO_SEQUENCE) {
+          if (!runtime.routeMap.has(beat.id)) {
+            console.warn(`Missing route for hero beat "${beat.id}"`)
           }
         }
-      } else {
-        // Waiting for geo data — slow drift
-        group.rotation.y += 0.00040
-      }
 
-      // ── Hero sequence ───────────────────────────────────────────────────────
-      if (heroStartedAt > 0 && nodeVisualMap.size > 0 && routeMap.size > 0) {
-        updateHeroSequence(nowMs, nodeVisualMap, routeMap)
+        runtime.assetsReady = true
+        runtime.heroStartedAt = performance.now()
+        runtime.currentCycle = -1
+        runtime.pausedAccumMs = 0
+        runtime.hiddenAt = null
+        runtime.triggeredRipples.clear()
+      })
+      .catch((err) => {
+        if (err?.name !== 'AbortError') {
+          console.error('Globe geo fetch failed:', err)
+        }
+      })
+
+    const animate = (nowMs: number) => {
+      if (disposed) return
+      rafId = requestAnimationFrame(animate)
+
+      const base = getBaseRotation(nowMs)
+
+      runtime.pointerCurrentX += (runtime.pointerTargetX - runtime.pointerCurrentX) * 0.08
+      runtime.pointerCurrentY += (runtime.pointerTargetY - runtime.pointerCurrentY) * 0.08
+
+      const finalX = base.x + runtime.pointerCurrentX
+      const finalY = base.y + runtime.pointerCurrentY
+
+      const ease = runtime.assetsReady ? 0.03 : 0.012
+      group.rotation.x += (finalX - group.rotation.x) * ease
+      group.rotation.y += (finalY - group.rotation.y) * ease
+
+      if (runtime.assetsReady) {
+        updateHeroSequence(nowMs)
       } else {
-        // Pre-load: idle nodes
-        nodeVisuals.forEach(node => setNodeState(node, 'idle', nowMs))
+        runtime.nodeVisuals.forEach((node) => setNodeState(node, 'idle', nowMs))
       }
 
       renderer.render(scene, camera)
     }
 
-    animate()
+    rafId = requestAnimationFrame(animate)
 
-    // ── Responsive resize ────────────────────────────────────────────────────
-    const resizeObserver = new ResizeObserver(() => {
-      if (!mount) return
-      const isMobileNow = window.innerWidth <= 600
-      const isTabletNow = window.innerWidth > 600 && window.innerWidth <= 1024
-      const w = isMobileNow ? 280 : isTabletNow ? 380 : mount.clientWidth
-      const h = w
-      camera.aspect = 1
-      camera.updateProjectionMatrix()
-      renderer.setSize(w, h)
-    })
+    const resizeObserver = new ResizeObserver(() => { applyRendererSize() })
     resizeObserver.observe(mount)
 
-    // ── Cleanup ──────────────────────────────────────────────────────────────
     return () => {
+      disposed = true
       abortCtrl.abort()
       cancelAnimationFrame(rafId)
       resizeObserver.disconnect()
-      if (interactionCtrl) interactionCtrl.dispose()
-      if (rippleSystem) rippleSystem.dispose()
-      disposables.forEach(d => d.dispose())
+      renderer.domElement.removeEventListener('pointermove', onPointerMove)
+      renderer.domElement.removeEventListener('pointerleave', onPointerLeave)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      reduceMotionMQ.removeEventListener('change', onReducedMotionChange)
+      runtime.rippleSystem?.dispose()
+      disposables.forEach((d) => d.dispose())
       renderer.dispose()
       if (mount.contains(renderer.domElement)) {
         mount.removeChild(renderer.domElement)
       }
     }
-  }, [interactive])
+  }, [interactive, quality, size])
 
   return (
     <div
