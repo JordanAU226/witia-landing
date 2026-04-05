@@ -360,11 +360,11 @@ export default function PremiumGlobe({
         return { x: defaultRotX, y: defaultRotY }
       }
 
-      // Before assets load: slow idle drift so globe is already moving on first paint
+      // Before assets load: almost static, just a tiny drift so it doesn't look frozen
       if (runtime.heroStartedAt === null) {
         return {
           x: defaultRotX,
-          y: defaultRotY + (nowMs * 0.00018) % (Math.PI * 2),
+          y: defaultRotY + Math.sin(nowMs * 0.00012) * 0.04,
         }
       }
 

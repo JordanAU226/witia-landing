@@ -23,7 +23,7 @@ export const GLOBE_TUNING = {
   motion: {
     // Default pose: Africa/Europe/Middle East canonical frame
     defaultRotX: -0.18,
-    defaultRotY: -0.15,  // Europe upper-left, Africa centered — matches canonical view
+    defaultRotY: 0.08,   // Europe upper-left, Africa center — canonical hero frame
     // Constrained sweep: ±18° — very small range, strong dwell
     sweepAmplitude: 18 * (Math.PI / 180),
     sweepPeriod: 62000,  // 62s cycle — viewer feels authorship, not animation
