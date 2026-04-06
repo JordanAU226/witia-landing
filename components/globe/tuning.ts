@@ -86,24 +86,41 @@ export interface NodeDef {
 }
 
 export const NODES: NodeDef[] = [
-  { id: 'london',     lat: 51.5,  lng: -0.1,   tier: 'primary' },
-  { id: 'brussels',   lat: 50.8,  lng: 4.4,    tier: 'secondary' },
-  { id: 'lagos',      lat: 6.5,   lng: 3.4,    tier: 'secondary' },
-  { id: 'new-york',   lat: 40.7,  lng: -74.0,  tier: 'secondary' },
-  { id: 'nairobi',    lat: -1.3,  lng: 36.8,   tier: 'tertiary' },
-  { id: 'washington', lat: 38.9,  lng: -77.0,  tier: 'tertiary' },
-  { id: 'singapore',  lat: 1.3,   lng: 103.8,  tier: 'tertiary' },
-  { id: 'birmingham', lat: 52.5,  lng: -1.9,   tier: 'ambient' },
-  { id: 'phoenix',    lat: 33.4,  lng: -112.1, tier: 'ambient' },
+  // Primary
+  { id: 'london',       lat: 51.5,   lng: -0.1,   tier: 'primary' },
+  // Secondary — key network hubs
+  { id: 'brussels',     lat: 50.8,   lng: 4.4,    tier: 'secondary' },
+  { id: 'lagos',        lat: 6.5,    lng: 3.4,    tier: 'secondary' },
+  { id: 'new-york',     lat: 40.7,   lng: -74.0,  tier: 'secondary' },
+  { id: 'mumbai',       lat: 19.1,   lng: 72.9,   tier: 'secondary' },
+  { id: 'sao-paulo',    lat: -23.5,  lng: -46.6,  tier: 'secondary' },
+  // Tertiary — supporting nodes
+  { id: 'nairobi',      lat: -1.3,   lng: 36.8,   tier: 'tertiary' },
+  { id: 'washington',   lat: 38.9,   lng: -77.0,  tier: 'tertiary' },
+  { id: 'singapore',    lat: 1.3,    lng: 103.8,  tier: 'tertiary' },
+  { id: 'dubai',        lat: 25.2,   lng: 55.3,   tier: 'tertiary' },
+  { id: 'johannesburg', lat: -26.2,  lng: 28.0,   tier: 'tertiary' },
+  { id: 'toronto',      lat: 43.7,   lng: -79.4,  tier: 'tertiary' },
+  // Ambient — present in system, very quiet
+  { id: 'birmingham',   lat: 52.5,   lng: -1.9,   tier: 'ambient' },
+  { id: 'phoenix',      lat: 33.4,   lng: -112.1, tier: 'ambient' },
 ]
 
 export const ROUTES: { id: string; from: string; to: string }[] = [
-  { id: 'london-brussels',  from: 'london',  to: 'brussels'  },
-  { id: 'brussels-lagos',   from: 'brussels', to: 'lagos'    },
-  { id: 'lagos-nairobi',    from: 'lagos',   to: 'nairobi'   },
-  { id: 'nairobi-new-york', from: 'nairobi', to: 'new-york'  },
-  { id: 'london-new-york',  from: 'london',  to: 'new-york'  },
-  { id: 'london-lagos',     from: 'london',  to: 'lagos'     },
+  // Hero sequence routes
+  { id: 'london-brussels',        from: 'london',    to: 'brussels'     },
+  { id: 'brussels-lagos',         from: 'brussels',  to: 'lagos'        },
+  { id: 'lagos-nairobi',          from: 'lagos',     to: 'nairobi'      },
+  { id: 'nairobi-new-york',       from: 'nairobi',   to: 'new-york'     },
+  // Background network routes — visible after 10s
+  { id: 'london-new-york',        from: 'london',    to: 'new-york'     },
+  { id: 'london-lagos',           from: 'london',    to: 'lagos'        },
+  { id: 'london-mumbai',          from: 'london',    to: 'mumbai'       },
+  { id: 'new-york-sao-paulo',     from: 'new-york',  to: 'sao-paulo'    },
+  { id: 'mumbai-singapore',       from: 'mumbai',    to: 'singapore'    },
+  { id: 'dubai-mumbai',           from: 'dubai',     to: 'mumbai'       },
+  { id: 'nairobi-johannesburg',   from: 'nairobi',   to: 'johannesburg' },
+  { id: 'new-york-toronto',       from: 'new-york',  to: 'toronto'      },
 ]
 
 export const HERO_SEQUENCE = [
