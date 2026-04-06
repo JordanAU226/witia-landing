@@ -369,7 +369,7 @@ export default function PremiumGlobe({
       }
 
       const elapsed = getEffectiveHeroElapsed(nowMs)
-      const isInHeroSequence = elapsed < 10000
+      const isInHeroSequence = elapsed < 27000  // extended for full sequence
 
       if (isInHeroSequence) {
         const { idleYawAmplitude, idlePitchAmplitude, idlePeriodMs } = HERO_MOTION

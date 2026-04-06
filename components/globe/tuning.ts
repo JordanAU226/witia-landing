@@ -124,6 +124,7 @@ export const ROUTES: { id: string; from: string; to: string }[] = [
 ]
 
 export const HERO_SEQUENCE = [
+  // Beat 1: London → Brussels (Europe learns)
   {
     id: 'london-brussels',
     from: 'london',
@@ -135,6 +136,7 @@ export const HERO_SEQUENCE = [
     arrivalMs: 250,
     cooldownMs: 250,
   },
+  // Beat 2: Brussels → Lagos (Europe shares with Africa)
   {
     id: 'brussels-lagos',
     from: 'brussels',
@@ -146,6 +148,7 @@ export const HERO_SEQUENCE = [
     arrivalMs: 300,
     cooldownMs: 350,
   },
+  // Beat 3: Lagos → Nairobi (Africa propagates)
   {
     id: 'lagos-nairobi',
     from: 'lagos',
@@ -157,6 +160,7 @@ export const HERO_SEQUENCE = [
     arrivalMs: 250,
     cooldownMs: 200,
   },
+  // Beat 4: Nairobi → New York (transcontinental)
   {
     id: 'nairobi-new-york',
     from: 'nairobi',
@@ -167,6 +171,78 @@ export const HERO_SEQUENCE = [
     travelMs: 2600,
     arrivalMs: 350,
     cooldownMs: 400,
+  },
+  // Beat 5: London → Mumbai (East expansion)
+  {
+    id: 'london-mumbai',
+    from: 'london',
+    to: 'mumbai',
+    strength: 'hero' as const,
+    startMs: 12000,
+    launchMs: 350,
+    travelMs: 2400,
+    arrivalMs: 300,
+    cooldownMs: 400,
+  },
+  // Beat 6: Mumbai → Singapore (Asia corridor)
+  {
+    id: 'mumbai-singapore',
+    from: 'mumbai',
+    to: 'singapore',
+    strength: 'support' as const,
+    startMs: 15200,
+    launchMs: 250,
+    travelMs: 1800,
+    arrivalMs: 250,
+    cooldownMs: 300,
+  },
+  // Beat 7: New York → Sao Paulo (Americas)
+  {
+    id: 'new-york-sao-paulo',
+    from: 'new-york',
+    to: 'sao-paulo',
+    strength: 'support' as const,
+    startMs: 17800,
+    launchMs: 280,
+    travelMs: 2000,
+    arrivalMs: 280,
+    cooldownMs: 300,
+  },
+  // Beat 8: Nairobi → Johannesburg (Africa deepens)
+  {
+    id: 'nairobi-johannesburg',
+    from: 'nairobi',
+    to: 'johannesburg',
+    strength: 'support' as const,
+    startMs: 20400,
+    launchMs: 250,
+    travelMs: 1600,
+    arrivalMs: 250,
+    cooldownMs: 250,
+  },
+  // Beat 9: Dubai → Mumbai (Middle East joins)
+  {
+    id: 'dubai-mumbai',
+    from: 'dubai',
+    to: 'mumbai',
+    strength: 'support' as const,
+    startMs: 22800,
+    launchMs: 220,
+    travelMs: 1400,
+    arrivalMs: 220,
+    cooldownMs: 250,
+  },
+  // Beat 10: New York → Toronto (North America mesh)
+  {
+    id: 'new-york-toronto',
+    from: 'new-york',
+    to: 'toronto',
+    strength: 'support' as const,
+    startMs: 24800,
+    launchMs: 200,
+    travelMs: 1200,
+    arrivalMs: 200,
+    cooldownMs: 200,
   },
 ] as const
 
