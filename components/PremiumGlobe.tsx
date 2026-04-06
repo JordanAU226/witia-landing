@@ -360,11 +360,11 @@ export default function PremiumGlobe({
         return { x: defaultRotX, y: defaultRotY }
       }
 
-      // Before assets load: almost static, just a tiny drift so it doesn't look frozen
+      // Before assets load: slow east-to-west drift
       if (runtime.heroStartedAt === null) {
         return {
           x: defaultRotX,
-          y: defaultRotY + Math.sin(nowMs * 0.00012) * 0.04,
+          y: defaultRotY - nowMs * 0.000055,  // east to west (negative Y)
         }
       }
 
@@ -373,18 +373,16 @@ export default function PremiumGlobe({
 
       if (isInHeroSequence) {
         const { idleYawAmplitude, idlePitchAmplitude, idlePeriodMs } = HERO_MOTION
+        // During hero sequence: nearly static with micro east-to-west drift
         return {
-          y: defaultRotY + idleYawAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 2),
+          y: defaultRotY - elapsed * 0.000015 + idleYawAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 2),
           x: defaultRotX + idlePitchAmplitude * Math.sin((nowMs / idlePeriodMs) * Math.PI * 1.3),
         }
       }
 
-      const sweepT = (elapsed % sweepPeriod) / sweepPeriod
-      const rawSin = Math.sin(sweepT * Math.PI * 2)
-      const biasedSweep = Math.sign(rawSin) * Math.pow(Math.abs(rawSin), 2.2)
-
+      // After hero sequence: steady east-to-west rotation, slightly faster
       return {
-        y: defaultRotY + sweepAmplitude * biasedSweep * 0.65,
+        y: defaultRotY - elapsed * 0.000065,  // east to west, continuous
         x: defaultRotX + (1.2 * Math.PI / 180) * Math.sin(nowMs * 0.000065),
       }
     }
