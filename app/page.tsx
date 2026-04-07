@@ -437,69 +437,11 @@ export default function Home() {
                 </a>
               </div>
 
-              {/* Track 2: Send a message */}
-              <div style={{ paddingTop: '32px' }}>
-                <p style={{ fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7a7570', fontFamily: "'Inter', sans-serif", fontWeight: 500, marginBottom: '12px' }}>
-                  OR SEND A MESSAGE
-                </p>
-
-              {submitted ? (
-                <p style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: '15px', color: '#000', lineHeight: 1.7 }}>
-                  Message received. We&apos;ll be in touch.
-                </p>
-              ) : (
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <input
-                    type="text"
-                    placeholder="Name"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#DDD8D2')}
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#DDD8D2')}
-                  />
-                  <textarea
-                    placeholder="Message"
-                    rows={4}
-                    required
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    style={{ ...inputStyle, resize: 'vertical', marginTop: '8px' }}
-                    onFocus={(e) => (e.target.style.borderBottomColor = '#000')}
-                    onBlur={(e) => (e.target.style.borderBottomColor = '#DDD8D2')}
-                  />
-                  {submitError && (
-                    <p style={{ fontSize: '12px', color: '#c00', fontFamily: "'Inter', sans-serif", marginTop: '8px' }}>
-                      {submitError}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="cta-link"
-                    style={{ marginTop: '20px', fontSize: '11px', letterSpacing: '0.1em', opacity: submitting ? 0.5 : 1 }}
-                  >
-                    {submitting ? 'SENDING...' : 'SEND MESSAGE ->'}
-                  </button>
-                </form>
-              )}
               <p style={{ marginTop: '24px' }}>
                 <a href="mailto:team@witia.ai" style={{ fontSize: '12px', color: '#aaa', fontFamily: "'Inter', sans-serif", textDecoration: 'none' }}>
                   or email team@witia.ai
                 </a>
               </p>
-              </div>
             </div>
           </div>
         </section>
