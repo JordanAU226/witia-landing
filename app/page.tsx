@@ -292,7 +292,9 @@ export default function Home() {
 
             <div className="reveal" ref={(el) => addRevealRef(el, 2)}>
               {[
-                { label: 'THE PROBLEM', text: 'Governments spend $9.5 trillion on public procurement annually (World Bank). The US federal government alone loses an estimated $233-521 billion to fraud each year (US GAO, 2024). Yet 60% of OECD countries have no systematic monitoring of anti-corruption effectiveness (OECD Anti-Corruption Outlook, 2024). In the UK, 4 in 5 government departments have procurement fraud measurement that is non-existent or clearly unreliable (UK National Audit Office, 2023). Most public bodies do not know what they are losing, or to whom - not because the tools do not exist, but because no one has built the infrastructure to find out.' },
+                { label: 'THE SCALE', text: 'Governments spend $9.5 trillion on public procurement annually (World Bank). The US federal government alone loses an estimated $233-521 billion to fraud each year (US GAO, 2024).' },
+                { label: 'THE GAP', text: '60% of OECD countries have no systematic monitoring of anti-corruption effectiveness (OECD, 2024). In the UK, 4 in 5 government departments have procurement fraud measurement that is non-existent or clearly unreliable (UK National Audit Office, 2023).' },
+                { label: 'THE REALITY', text: 'Most public bodies do not know what they are losing, or to whom - not because the tools do not exist, but because no one has built the infrastructure to find out.' },
                 { label: 'THE INSIGHT', text: 'In most procurement systems, gaming the process pays better than running it honestly. Bid manipulation, inflated pricing, and shell structures persist not because enforcement fails - but because the incentives never rewarded integrity in the first place.' },
                 { label: 'THE SOLUTION', text: 'Three-layer infrastructure: fraud detection that works, trust scoring that restructures incentives, and a cross-jurisdiction fraud intelligence exchange.' },
               ].map((item, i) => (
