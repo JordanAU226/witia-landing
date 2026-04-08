@@ -374,7 +374,7 @@ export default function TransactionFlow() {
 
   return (
     <div className="min-h-screen bg-[#07080b] text-white">
-      <div ref={containerRef} className="relative h-[360vh] bg-[#07080b]">
+      <div ref={containerRef} className="relative h-[600vh] bg-[#07080b]">
         <div className="sticky top-0 h-screen overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(124,173,255,0.08),transparent_26%),radial-gradient(circle_at_50%_54%,rgba(196,180,156,0.08),transparent_38%),linear-gradient(to_bottom,rgba(255,255,255,0.02),transparent_18%)]" />
           <ArchitectureScene progress={progress} />
