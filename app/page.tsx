@@ -293,15 +293,25 @@ export default function Home() {
             <div className="reveal" ref={(el) => addRevealRef(el, 2)}>
               {[
                 { label: 'THE PROBLEM', text: 'Governments spend $9.5 trillion on public procurement annually (World Bank). The US federal government alone loses an estimated $233-521 billion to fraud each year (US GAO, 2024).\n\nYet 60% of OECD countries have no systematic monitoring of anti-corruption effectiveness (OECD Anti-Corruption Outlook, 2024).\n\nIn the UK, 4 in 5 government departments have procurement fraud measurement that is non-existent or clearly unreliable (UK National Audit Office, 2023). Most public bodies do not know what they are losing, or to whom - not because the tools do not exist, but because no one has built the infrastructure to find out.' },
-                { label: 'THE INSIGHT', text: 'In most procurement systems, gaming the process pays better than running it honestly. Bid manipulation, inflated pricing, and shell structures persist not because enforcement fails - but because the incentives never rewarded integrity in the first place.' },
+                { label: 'THE INSIGHT', text: 'In most procurement systems, gaming the process pays better than running it honestly. Bid manipulation, inflated pricing, and shell structures persist not because enforcement fails - but __because the incentives never rewarded integrity in the first place.__' },
                 { label: 'THE SOLUTION', text: 'Three-layer infrastructure: fraud detection that works, trust scoring that restructures incentives, and a cross-jurisdiction fraud intelligence exchange.' },
               ].map((item, i) => (
                 <div key={i} className="row-grid">
                   <span style={rowLabel}>{item.label}</span>
                   <span style={{ fontSize: '13px', color: '#000', lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>
-                    {item.text.split('\n\n').map((para, pi) => (
-                      <span key={pi} style={{ display: 'block', marginBottom: pi < item.text.split('\n\n').length - 1 ? '12px' : 0 }}>{para}</span>
-                    ))}
+                    {item.text.split('\n\n').map((para, pi, arr) => {
+                      // Render __text__ as bold
+                      const parts = para.split(/(__.*?__)/g)
+                      return (
+                        <span key={pi} style={{ display: 'block', marginBottom: pi < arr.length - 1 ? '12px' : 0 }}>
+                          {parts.map((part, idx) =>
+                            part.startsWith('__') && part.endsWith('__')
+                              ? <strong key={idx}>{part.slice(2, -2)}</strong>
+                              : part
+                          )}
+                        </span>
+                      )
+                    })}
                   </span>
                 </div>
               ))}
