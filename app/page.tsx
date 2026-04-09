@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 const PremiumGlobe = dynamic(() => import('../components/PremiumGlobe'), { ssr: false });
-const TransactionFlow = dynamic(() => import('../components/TransactionFlow'), { ssr: false });
+
 
 
 export default function Home() {
@@ -323,7 +323,7 @@ export default function Home() {
         <hr className="divider" />
 
         {/* PLATFORM */}
-        <section style={{ paddingTop: '64px', paddingBottom: '0' }}>
+        <section style={{ paddingTop: '64px', paddingBottom: '64px' }}>
           <div className="container">
             <div className="reveal content-col" ref={(el) => addRevealRef(el, 3)}>
               <p className="section-label">03 - THE PLATFORM</p>
@@ -331,11 +331,32 @@ export default function Home() {
                 Three layers. One immune system.
               </h2>
               <p style={{ marginTop: '20px', fontSize: '13px', color: '#555', lineHeight: 1.7, fontFamily: "'Inter', sans-serif" }}>
-                Watch a procurement transaction move through WITIA in real time. Scroll to follow.
+                Each layer delivers value standalone. Together, they make procurement corruption economically irrational.
               </p>
             </div>
+
+            <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '680px' }}>
+              {[
+                {
+                  title: 'Fraud Detection',
+                  body: 'AI-powered anomaly detection that cuts false positives from 90-95% to actionable, explainable alerts - with full audit trails for every finding.',
+                },
+                {
+                  title: 'Vendor Trust Scoring',
+                  body: 'A frontier innovation on traditional credit scoring - applying 8-dimensional trust analysis to public procurement. Top-quartile vendors earn expedited payments. Falling scores trigger audit probability increases. Fraud becomes irrational before it starts.',
+                },
+                {
+                  title: 'Fraud Intelligence Exchange',
+                  body: 'Fraud caught in one jurisdiction trains the model protecting the next. The credit bureau insight applied to procurement: reputation made portable, enforcement made collective.',
+                },
+              ].map((card, i) => (
+                <div key={i} className="reveal" ref={(el) => addRevealRef(el, 4 + i)} style={{ background: '#F4F1EC', borderRadius: '6px', padding: '28px', border: '1px solid #E8E3DC' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#000', fontFamily: "'Inter', sans-serif", marginBottom: '10px' }}>{card.title}</h3>
+                  <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.65, fontFamily: "'Inter', sans-serif" }}>{card.body}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <TransactionFlow />
         </section>
 
         <hr className="divider" />
